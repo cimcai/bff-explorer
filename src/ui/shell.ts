@@ -40,7 +40,7 @@ export function renderAppShell(
               ${controlMarkup(defaults, "Metric interval", "metricInterval", String(config.metricInterval), "Number of epochs between heavier emergence metric calculations. Lower values update the chart faster but use more processor time.")}
               ${controlMarkup(defaults, "Time budget (milliseconds)", "timeBudgetMs", String(config.timeBudgetMs), "Approximate worker compute budget per interface update. Higher values advance faster but can make updates less fluid.")}
               <label class="toggle-control">
-                <span class="label-row">Auto-capture emergence ${info("Continuously keeps only a short rolling video buffer. When the emergence signal crosses the trigger, it saves about 30 seconds before detection and up to 2 minutes after detection as a WebM plus metadata JSON.")}</span>
+                <span class="label-row">Auto-capture emergence ${info("Continuously keeps only a short rolling video buffer. When the emergence signal crosses the trigger, it saves about 30 seconds before detection and 30 seconds after detection as a WebM plus metadata JSON.")}</span>
                 <input id="autoCapture" type="checkbox" title="Auto-capture emergence" data-tip="Keep a short rolling video buffer and save an emergence clip automatically when the signal crosses the trigger." />
               </label>
               ${replicatorInjectionMarkup(config)}

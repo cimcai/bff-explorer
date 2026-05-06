@@ -141,7 +141,7 @@ let currentSeed = config.seed;
 const programPalette = buildPalette();
 const CAPTURE_FPS = 8;
 const CAPTURE_PRE_ROLL_MS = 30_000;
-const CAPTURE_POST_ROLL_MS = 120_000;
+const CAPTURE_POST_ROLL_MS = 30_000;
 const CAPTURE_TIMESLICE_MS = 1_000;
 const CAPTURE_STRUCTURE_TRIGGER = 0.7;
 const CAPTURE_UNIQUE_TRIGGER = 0.98;
@@ -587,7 +587,7 @@ function triggerAutoCapture(status: SimulationStatus): void {
   captureDetectionMetric = { ...status.latestMetric };
   setCaptureStatus(
     "triggered",
-    `Emergence detected at epoch ${status.epoch.toLocaleString()}; recording 2 more minutes.`
+    `Emergence detected at epoch ${status.epoch.toLocaleString()}; recording 30 more seconds.`
   );
 }
 
