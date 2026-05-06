@@ -1,0 +1,35 @@
+import { describe, expect, it } from "vitest";
+import { RollingCaptureBuffer } from "../src/ui/captureBuffer";
+
+describe("rolling capture buffer", () => {
+  it("keeps the first recorder chunk when old video chunks are pruned", async () => {
+    const buffer = new RollingCaptureBuffer();
+    const header = new Blob(["webm-header"]);
+    const oldChunk = new Blob(["old"]);
+    const keptChunk = new Blob(["kept"]);
+
+    buffer.add(header, 0);
+    buffer.add(oldChunk, 1_000);
+    buffer.add(keptChunk, 40_000);
+    buffer.pruneBefore(30_000);
+
+    const saved = buffer.chunksForSave();
+    expect(saved.map((chunk) => chunk.blob)).toEqual([header, keptChunk]);
+    await expect(saved[0].blob.text()).resolves.toBe("webm-header");
+  });
+
+  it("can reset rolling chunks without dropping the active recorder header", () => {
+    const buffer = new RollingCaptureBuffer();
+    const header = new Blob(["webm-header"]);
+
+    buffer.add(header, 0);
+    buffer.add(new Blob(["old"]), 1_000);
+    buffer.clear({ preserveHeader: true });
+    buffer.add(new Blob(["new"]), 2_000);
+
+    expect(buffer.chunksForSave().map((chunk) => chunk.blob)).toEqual([
+      header,
+      expect.any(Blob)
+    ]);
+  });
+});

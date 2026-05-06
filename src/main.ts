@@ -33,6 +33,7 @@ import {
   renderChartMetricEquation,
   type ChartMetricKey
 } from "./ui/metricChart";
+import { RollingCaptureBuffer } from "./ui/captureBuffer";
 import { renderAppShell } from "./ui/shell";
 
 const DEFAULT_CONFIG = defaultConfig();
@@ -147,7 +148,7 @@ const CAPTURE_STRUCTURE_TRIGGER = 0.7;
 const CAPTURE_UNIQUE_TRIGGER = 0.98;
 let captureRecorder: MediaRecorder | null = null;
 let captureStream: MediaStream | null = null;
-let captureChunks: CaptureChunk[] = [];
+const captureBuffer = new RollingCaptureBuffer();
 let captureState: CaptureState = "off";
 let captureTriggeredAt = 0;
 let capturePostRollUntil = 0;
@@ -162,11 +163,6 @@ type CaptureState =
   | "saving"
   | "saved"
   | "error";
-
-interface CaptureChunk {
-  blob: Blob;
-  recordedAt: number;
-}
 
 const worker = new Worker(new URL("./worker/sim.worker.ts", import.meta.url), {
   type: "module"
@@ -602,7 +598,7 @@ function handleCaptureChunk(event: BlobEvent): void {
   if (event.data.size <= 0) {
     return;
   }
-  captureChunks.push({ blob: event.data, recordedAt: performance.now() });
+  captureBuffer.add(event.data, performance.now());
   if (captureState === "watching") {
     pruneCapturePreRoll(performance.now());
   }
@@ -611,7 +607,7 @@ function handleCaptureChunk(event: BlobEvent): void {
 function finalizeCaptureIfNeeded(): void {
   stopCaptureTracks();
   const shouldSave = captureState === "saving";
-  const chunks = captureChunks;
+  const chunks = captureBuffer.chunksForSave();
   captureRecorder = null;
   captureStream = null;
 
@@ -662,16 +658,13 @@ function buildCaptureMetadata(videoBytes: number): Record<string, unknown> {
 
 function pruneCapturePreRoll(now: number): void {
   const firstKeptAt = now - CAPTURE_PRE_ROLL_MS;
-  while (
-    captureChunks.length > 0 &&
-    captureChunks[0].recordedAt < firstKeptAt
-  ) {
-    captureChunks.shift();
-  }
+  captureBuffer.pruneBefore(firstKeptAt);
 }
 
 function resetCaptureBuffer(): void {
-  captureChunks = [];
+  captureBuffer.clear({
+    preserveHeader: Boolean(captureRecorder && captureRecorder.state !== "inactive")
+  });
   captureTriggeredAt = 0;
   capturePostRollUntil = 0;
   captureDetectionMetric = null;
@@ -682,7 +675,7 @@ function resetCaptureBuffer(): void {
 }
 
 function resetCaptureState(nextState: CaptureState): void {
-  captureChunks = [];
+  captureBuffer.clear();
   captureState = nextState;
   captureTriggeredAt = 0;
   capturePostRollUntil = 0;
@@ -694,13 +687,7 @@ function resetCaptureState(nextState: CaptureState): void {
 }
 
 function captureBufferedMs(): number {
-  if (captureChunks.length < 2) {
-    return 0;
-  }
-  return (
-    captureChunks[captureChunks.length - 1].recordedAt -
-    captureChunks[0].recordedAt
-  );
+  return captureBuffer.bufferedMs();
 }
 
 function setCaptureStatus(state: CaptureState, text: string): void {
