@@ -152,15 +152,6 @@ export function drawMetricChart(
     }
   });
   ctx.stroke();
-
-  ctx.fillStyle = "#b9891c";
-  history.forEach((sample, index) => {
-    if (!sample.phaseTransitionDetected) {
-      return;
-    }
-    const x = plot.left + (index / (history.length - 1)) * plotWidth;
-    ctx.fillRect(x, plot.top, 2, plotHeight);
-  });
 }
 
 interface ChartPlotArea {

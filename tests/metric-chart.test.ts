@@ -129,9 +129,28 @@ describe("metric chart definitions", () => {
     expect(labels).not.toContain("2%");
     expect(labels).not.toContain("3%");
   });
+
+  it("does not draw vertical phase-transition markers", () => {
+    const fillRects: Array<{ x: number; y: number; width: number; height: number }> = [];
+    const canvas = mockCanvas([], fillRects);
+
+    drawMetricChart(
+      canvas,
+      [
+        { ...metric, epoch: 0, structureScore: 0.1 },
+        { ...metric, epoch: 10, structureScore: 0.9, phaseTransitionDetected: true }
+      ],
+      "structureScore"
+    );
+
+    expect(fillRects).toEqual([{ x: 0, y: 0, width: 920, height: 220 }]);
+  });
 });
 
-function mockCanvas(labels: string[]): HTMLCanvasElement {
+function mockCanvas(
+  labels: string[],
+  fillRects: Array<{ x: number; y: number; width: number; height: number }> = []
+): HTMLCanvasElement {
   const context = {
     fillStyle: "",
     strokeStyle: "",
@@ -140,7 +159,9 @@ function mockCanvas(labels: string[]): HTMLCanvasElement {
     textAlign: "left",
     textBaseline: "alphabetic",
     clearRect: () => undefined,
-    fillRect: () => undefined,
+    fillRect: (x: number, y: number, width: number, height: number) => {
+      fillRects.push({ x, y, width, height });
+    },
     beginPath: () => undefined,
     moveTo: () => undefined,
     lineTo: () => undefined,

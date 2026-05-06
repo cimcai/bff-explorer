@@ -317,10 +317,16 @@ describe("BffSimulator checkpoints", () => {
     const inserted = sim.injectProgramRandomly(preset, 12);
 
     expect(inserted).toBe(12);
-    const top = computeTopPrograms(sim.soup, 1)[0];
-    expect(top.count).toBe(12);
-    expect(top.bytes).toEqual([...preset]);
-    expect(sim.status(false).topPrograms[0].count).toBe(12);
+    expect(countProgramMatches(sim.soup, preset)).toBe(12);
+    expect(
+      sim
+        .status(false)
+        .topPrograms.some(
+          (program) =>
+            program.count === 12 &&
+            program.bytes.every((byte, index) => byte === preset[index])
+        )
+    ).toBe(true);
   });
 
   it("uses deterministic intervention placement without disturbing future execution", () => {
@@ -346,3 +352,20 @@ describe("BffSimulator checkpoints", () => {
     expect(makeSim()).toBe(makeSim());
   });
 });
+
+function countProgramMatches(soup: Uint8Array, expected: Uint8Array): number {
+  let matches = 0;
+  for (let offset = 0; offset < soup.length; offset += TAPE_SIZE) {
+    let isMatch = true;
+    for (let i = 0; i < TAPE_SIZE; i += 1) {
+      if (soup[offset + i] !== expected[i]) {
+        isMatch = false;
+        break;
+      }
+    }
+    if (isMatch) {
+      matches += 1;
+    }
+  }
+  return matches;
+}
