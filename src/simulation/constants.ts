@@ -1,0 +1,13 @@
+export const TAPE_SIZE = 64;
+export const PAIR_TAPE_SIZE = TAPE_SIZE * 2;
+export const TILE_SIZE = 8;
+export const DEFAULT_GRID_WIDTH = 240;
+export const DEFAULT_GRID_HEIGHT = 135;
+export const DEFAULT_FAST_MODE = false;
+export const DEFAULT_MUTATION_RATE = 0;
+export const DEFAULT_CHECKPOINT_INTERVAL = 512;
+export const DEFAULT_METRIC_INTERVAL = 256;
+export const DEFAULT_TIME_BUDGET_MS = 16;
+export const DEFAULT_MAX_INSTRUCTION_READS = 8 * 1024;
+export const MAX_CHECKPOINTS = 48;
+export const METRIC_HISTORY_LIMIT = 256;

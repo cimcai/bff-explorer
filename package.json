@@ -1,0 +1,26 @@
+{
+  "name": "bff-explorer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "test:browser": "node scripts/browser-smoke.mjs",
+    "calibrate:defaults": "tsx scripts/calibrate-defaults.ts",
+    "check:emergence": "tsx scripts/check-emergence.ts",
+    "find:emergence": "tsx scripts/find-emergence.ts"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.59.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.7",
+    "vitest": "^4.0.16"
+  },
+  "dependencies": {
+    "katex": "^0.16.45"
+  }
+}
