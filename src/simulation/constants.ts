@@ -3,7 +3,6 @@ export const PAIR_TAPE_SIZE = TAPE_SIZE * 2;
 export const TILE_SIZE = 8;
 export const DEFAULT_GRID_WIDTH = 240;
 export const DEFAULT_GRID_HEIGHT = 135;
-export const DEFAULT_FAST_MODE = false;
 export const DEFAULT_MUTATION_RATE = 0;
 export const DEFAULT_CHECKPOINT_INTERVAL = 512;
 export const DEFAULT_METRIC_INTERVAL = 256;

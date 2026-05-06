@@ -195,7 +195,6 @@ describe("BffSimulator checkpoints", () => {
     const before = checksumBytes(sim.soup);
 
     sim.updateRuntimeConfig({
-      fastMode: false,
       mutationRate: 2,
       checkpointInterval: 0.5,
       metricInterval: 3.8,
@@ -203,7 +202,6 @@ describe("BffSimulator checkpoints", () => {
     });
 
     expect(checksumBytes(sim.soup)).toBe(before);
-    expect(sim.config.fastMode).toBe(false);
     expect(sim.config.mutationRate).toBe(1);
     expect(sim.config.checkpointInterval).toBe(1);
     expect(sim.config.metricInterval).toBe(3);
@@ -240,7 +238,6 @@ describe("BffSimulator checkpoints", () => {
       gridWidth,
       gridHeight,
       seed: 2,
-      fastMode: false,
       mutationRate: 1,
       checkpointInterval: 99,
       metricInterval: 99,
@@ -274,7 +271,6 @@ describe("BffSimulator checkpoints", () => {
       gridWidth,
       gridHeight,
       seed: 3,
-      fastMode: false,
       mutationRate: 0,
       checkpointInterval: 9999,
       metricInterval: 32,
@@ -304,7 +300,6 @@ describe("BffSimulator checkpoints", () => {
       gridWidth: 10,
       gridHeight: 10,
       seed: 44,
-      fastMode: false,
       mutationRate: 0,
       checkpointInterval: 9999,
       metricInterval: 16,
@@ -335,7 +330,6 @@ describe("BffSimulator checkpoints", () => {
         gridWidth: 16,
         gridHeight: 10,
         seed: 91,
-        fastMode: false,
         mutationRate: 0,
         checkpointInterval: 9999,
         metricInterval: 16,

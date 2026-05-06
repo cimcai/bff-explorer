@@ -167,7 +167,6 @@ function runBatch(
   const sim = new BffSimulator({
     ...config,
     seed,
-    fastMode: false,
     mutationRate,
     checkpointInterval: epochBudget + 1,
     metricInterval: sampleInterval

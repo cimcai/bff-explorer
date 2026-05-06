@@ -3,7 +3,6 @@ import {
   buildRadius2NeighborTable,
   buildRadius2Neighbors,
   initializeOrder,
-  selectFastPairsInto,
   selectPairsFromTableInto,
   selectPairsInto
 } from "../src/simulation/grid";
@@ -124,47 +123,5 @@ describe("2D radius-2 grid", () => {
     expect(Array.from(pairsB1.slice(0, countB))).toEqual(
       Array.from(pairsB0.slice(0, countA))
     );
-  });
-
-  it("fast schedule selects non-overlapping radius-2 local pairs", () => {
-    const width = 16;
-    const height = 12;
-    const count = width * height;
-    const used = new Uint8Array(count);
-    const pairsA = new Uint32Array(Math.ceil(count / 2));
-    const pairsB = new Uint32Array(Math.ceil(count / 2));
-
-    let maxPairCount = 0;
-    for (let epoch = 0; epoch < 20; epoch += 1) {
-      const pairCount = selectFastPairsInto(
-        width,
-        height,
-        epoch,
-        123,
-        used,
-        pairsA,
-        pairsB
-      );
-      maxPairCount = Math.max(maxPairCount, pairCount);
-      const seen = new Set<number>();
-
-      for (let i = 0; i < pairCount; i += 1) {
-        const a = pairsA[i];
-        const b = pairsB[i];
-        const ax = a % width;
-        const ay = Math.floor(a / width);
-        const bx = b % width;
-        const by = Math.floor(b / width);
-        expect(seen.has(a)).toBe(false);
-        expect(seen.has(b)).toBe(false);
-        expect(Math.abs(ax - bx)).toBeLessThanOrEqual(2);
-        expect(Math.abs(ay - by)).toBeLessThanOrEqual(2);
-        expect(a).not.toBe(b);
-        seen.add(a);
-        seen.add(b);
-      }
-    }
-
-    expect(maxPairCount).toBeGreaterThanOrEqual(90);
   });
 });

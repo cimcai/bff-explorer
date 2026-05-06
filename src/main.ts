@@ -54,7 +54,6 @@ const canvasScrubber = document.querySelector<HTMLDivElement>(".canvas-scrubber"
 const playPauseButton = mustGet<HTMLButtonElement>("playPause");
 const resetButton = mustGet<HTMLButtonElement>("reset");
 const newRunButton = mustGet<HTMLButtonElement>("newRun");
-const fastModeInput = mustGet<HTMLInputElement>("fastMode");
 const mutationRateInput = mustGet<HTMLInputElement>("mutationRate");
 const checkpointIntervalInput = mustGet<HTMLInputElement>("checkpointInterval");
 const metricIntervalInput = mustGet<HTMLInputElement>("metricInterval");
@@ -250,12 +249,6 @@ newRunButton.addEventListener("click", () => {
   fitInitialized = false;
   resetCaptureBuffer();
   post({ type: "reset", config: readConfig() });
-});
-
-fastModeInput.addEventListener("change", () => {
-  updateRuntimeConfig({
-    fastMode: fastModeInput.checked
-  });
 });
 
 mutationRateInput.addEventListener("change", () => {
@@ -788,7 +781,6 @@ function readConfig(): SimulationConfig {
     gridWidth: config.gridWidth,
     gridHeight: config.gridHeight,
     seed: currentSeed,
-    fastMode: fastModeInput.checked,
     mutationRate: numberFromInput(mutationRateInput, config.mutationRate),
     checkpointInterval: numberFromInput(
       checkpointIntervalInput,
@@ -801,7 +793,6 @@ function readConfig(): SimulationConfig {
 }
 
 function resetControlsToDefaults(): void {
-  fastModeInput.checked = DEFAULT_CONFIG.fastMode;
   mutationRateInput.value = String(DEFAULT_CONFIG.mutationRate);
   checkpointIntervalInput.value = String(DEFAULT_CONFIG.checkpointInterval);
   metricIntervalInput.value = String(DEFAULT_CONFIG.metricInterval);
@@ -812,7 +803,6 @@ function resetControlsToDefaults(): void {
   );
   renderReplicatorPreset();
   updateRuntimeConfig({
-    fastMode: DEFAULT_CONFIG.fastMode,
     mutationRate: DEFAULT_CONFIG.mutationRate,
     checkpointInterval: DEFAULT_CONFIG.checkpointInterval,
     metricInterval: DEFAULT_CONFIG.metricInterval,

@@ -1,6 +1,5 @@
 import {
   DEFAULT_CHECKPOINT_INTERVAL,
-  DEFAULT_FAST_MODE,
   DEFAULT_GRID_HEIGHT,
   DEFAULT_GRID_WIDTH,
   DEFAULT_MAX_INSTRUCTION_READS,
@@ -18,7 +17,6 @@ import {
   buildRadius2NeighborTable,
   initializeOrder,
   selectPairsFromTableInto,
-  selectFastPairsInto,
   type NeighborTable
 } from "./grid";
 import {
@@ -39,7 +37,6 @@ export interface SimulationConfig {
   gridWidth: number;
   gridHeight: number;
   seed: number;
-  fastMode: boolean;
   mutationRate: number;
   checkpointInterval: number;
   metricInterval: number;
@@ -65,7 +62,6 @@ export interface BatchStats {
 export type RuntimeConfigUpdate = Partial<
   Pick<
     SimulationConfig,
-    | "fastMode"
     | "mutationRate"
     | "checkpointInterval"
     | "metricInterval"
@@ -121,7 +117,6 @@ export function defaultConfig(): SimulationConfig {
     gridWidth: DEFAULT_GRID_WIDTH,
     gridHeight: DEFAULT_GRID_HEIGHT,
     seed: 0,
-    fastMode: DEFAULT_FAST_MODE,
     mutationRate: DEFAULT_MUTATION_RATE,
     checkpointInterval: DEFAULT_CHECKPOINT_INTERVAL,
     metricInterval: DEFAULT_METRIC_INTERVAL,
@@ -217,7 +212,6 @@ export class BffSimulator {
 
   updateRuntimeConfig(update: RuntimeConfigUpdate): void {
     const next = sanitizeConfig({ ...this.config, ...update });
-    this.config.fastMode = next.fastMode;
     this.config.mutationRate = next.mutationRate;
     this.config.checkpointInterval = next.checkpointInterval;
     this.config.metricInterval = next.metricInterval;
@@ -253,28 +247,15 @@ export class BffSimulator {
 
   stepEpoch(): EpochStats {
     this.commitPreviewBranch();
-    let pairCount = 0;
-    if (this.config.fastMode) {
-      pairCount = selectFastPairsInto(
-        this.config.gridWidth,
-        this.config.gridHeight,
-        this.epoch,
-        this.config.seed,
-        this.used,
-        this.pairsA,
-        this.pairsB
-      );
-    } else {
-      initializeOrder(this.order);
-      pairCount = selectPairsFromTableInto(
-        this.order,
-        this.used,
-        this.neighbors,
-        this.scheduleRng,
-        this.pairsA,
-        this.pairsB
-      );
-    }
+    initializeOrder(this.order);
+    const pairCount = selectPairsFromTableInto(
+      this.order,
+      this.used,
+      this.neighbors,
+      this.scheduleRng,
+      this.pairsA,
+      this.pairsB
+    );
     let instructionReads = 0;
     let activeOps = 0;
 
@@ -519,7 +500,6 @@ export function sanitizeConfig(config: SimulationConfig): SimulationConfig {
     gridWidth: Math.max(2, Math.floor(config.gridWidth)),
     gridHeight: Math.max(2, Math.floor(config.gridHeight)),
     seed: Math.floor(config.seed) >>> 0,
-    fastMode: Boolean(config.fastMode),
     mutationRate: clampNumber(config.mutationRate, 0, 1),
     checkpointInterval: Math.max(1, Math.floor(config.checkpointInterval)),
     metricInterval: Math.max(1, Math.floor(config.metricInterval)),

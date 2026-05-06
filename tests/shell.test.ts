@@ -10,9 +10,6 @@ describe("app shell markup", () => {
     expect(html).toContain('id="mutationRate"');
     expect(html).toContain(`title="Default: ${config.mutationRate}"`);
     expect(html).toContain(`Default: ${config.mutationRate}.`);
-    expect(html).toContain('id="fastMode"');
-    expect(html).not.toContain('id="fastMode" type="checkbox" checked');
-    expect(html).toContain("Default: off.");
     expect(html).toContain('id="timeBudgetMs"');
     expect(html).toContain(`title="Default: ${config.timeBudgetMs}"`);
     expect(html).toContain(`Default: ${config.timeBudgetMs}.`);
@@ -82,6 +79,10 @@ describe("app shell markup", () => {
     expect(html).toContain('data-collapsible-section="emergence"');
     expect(html).toContain('data-collapsible-section="programs"');
     expect(html).toContain('data-collapsible-section="interaction"');
+    expect(html).toContain(
+      'class="interaction-section collapsible-section collapsed"'
+    );
+    expect(html).toContain('aria-expanded="false">Show</button>');
     expect(html).toContain('data-collapsible-section="diagnostics"');
     expect(html).toContain('data-collapsible-section="explanation"');
     expect(html).toContain('data-collapsible-section="resources"');

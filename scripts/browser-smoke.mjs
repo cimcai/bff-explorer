@@ -29,11 +29,8 @@ await mobilePage.goto(url, { waitUntil: "networkidle" });
 const mobileLayout = await inspectResponsiveLayout(mobilePage);
 await mobilePage.close();
 
-const fastModeInitiallyChecked = await page.locator("#fastMode").isChecked();
-await page.locator("#fastMode").check();
 await page.locator("#mutationRate").fill("0.002");
 await page.locator("#resetDefaults").click();
-const fastModeResetChecked = await page.locator("#fastMode").isChecked();
 const resetMutationValue = await page.locator("#mutationRate").inputValue();
 const replicatorPresetOptions = await page.locator("#replicatorPreset option").count();
 const initialReplicatorCode = await page.locator("#replicatorCode").textContent();
@@ -46,6 +43,9 @@ const injectorStatus = await page.locator("#injectorStatus").textContent();
 await page.locator("#loadReplicatorToLab").click();
 const loadedReplicatorA = await page.locator("#interactionCellA").inputValue();
 const collapseToggleCount = await page.locator("[data-collapse-toggle]").count();
+const interactionInitiallyCollapsed = await isSectionCollapsed(page, "interaction");
+await page.locator('[data-collapsible-section="interaction"] [data-collapse-toggle]').click();
+const interactionExpanded = !(await isSectionCollapsed(page, "interaction"));
 await page.locator('[data-collapsible-section="parameters"] [data-collapse-toggle]').click();
 const parametersCollapsed = await isSectionCollapsed(page, "parameters");
 await page.locator('[data-collapsible-section="parameters"] [data-collapse-toggle]').click();
@@ -130,7 +130,6 @@ const iconTooltipCount = await page.locator(".icon-button[data-tip]").count();
 const tooltipChecks = [];
 tooltipChecks.push(await inspectTooltip(page, "#fullscreen"));
 tooltipChecks.push(await inspectTooltip(page, "#newRun"));
-tooltipChecks.push(await inspectTooltip(page, "#fastMode"));
 tooltipChecks.push(await inspectTooltip(page, ".info"));
 const programRows = await page.locator(".program-row").count();
 const programDetail = await page.locator("#programDetailStats").textContent();
@@ -162,8 +161,6 @@ const result = {
   desktopLayout,
   midLayout,
   mobileLayout,
-  fastModeInitiallyChecked,
-  fastModeResetChecked,
   epoch,
   epochsPerSecond,
   pairsPerEpoch,
@@ -197,6 +194,8 @@ const result = {
   injectorStatus,
   loadedReplicatorA,
   collapseToggleCount,
+  interactionInitiallyCollapsed,
+  interactionExpanded,
   parametersCollapsed,
   parametersExpanded,
   interactionStatus,
@@ -234,8 +233,6 @@ if (
   !mobileLayout.checkpointButtonSameTopRow ||
   !mobileLayout.collapseButtonsContained ||
   !mobileLayout.noHorizontalOverflow ||
-  fastModeInitiallyChecked ||
-  fastModeResetChecked ||
   epoch <= 0 ||
   epochsPerSecond <= 0 ||
   pairsPerEpoch <= 0 ||
@@ -263,6 +260,8 @@ if (
   !injectorStatus?.includes("Inserted 3") ||
   !loadedReplicatorA?.includes("[[{.>]-]") ||
   collapseToggleCount !== 7 ||
+  !interactionInitiallyCollapsed ||
+  !interactionExpanded ||
   !parametersCollapsed ||
   !parametersExpanded ||
   !interactionStatus?.includes("1 reads") ||

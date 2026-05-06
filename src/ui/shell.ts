@@ -34,7 +34,6 @@ export function renderAppShell(
           <section class="panel parameters-panel collapsible-section" aria-label="Simulation parameters" data-collapsible-section="parameters">
             ${sectionHead("Parameters", "Core run controls for the current soup.")}
             <div class="section-body panel-grid" data-collapse-body>
-              ${toggleMarkup(defaults, "Fast mode", "fastMode", config.fastMode, "Uses a sparse synchronous local-pair schedule that is cheaper to form and suitable for parallel execution. This keeps local BFF interactions and mutation, but fewer cells interact per epoch and it is not the paper-exact shuffled greedy radius-2 scheduler, so emergence timing and spatial statistics may differ.")}
               ${controlMarkup(defaults, "Mutation rate", "mutationRate", String(config.mutationRate), "Probability that each byte is replaced by a random byte during an epoch. The default is zero because the 2D visual run is most stable when nascent replicators are not damaged by background noise; the paper default 0.000244 and 0.001 are useful comparison values.")}
               ${controlMarkup(defaults, "Checkpoint interval", "checkpointInterval", String(config.checkpointInterval), "Number of epochs between saved scrub states. Coarser checkpoints use much less memory and avoid scrub stalls.")}
               ${controlMarkup(defaults, "Metric interval", "metricInterval", String(config.metricInterval), "Number of epochs between heavier emergence metric calculations. Lower values update the chart faster but use more processor time.")}
@@ -43,11 +42,11 @@ export function renderAppShell(
                 <span class="label-row">Auto-capture emergence ${info("Continuously keeps only a short rolling video buffer. When the emergence signal crosses the trigger, it saves about 30 seconds before detection and 30 seconds after detection as a WebM plus metadata JSON.")}</span>
                 <input id="autoCapture" type="checkbox" title="Auto-capture emergence" data-tip="Keep a short rolling video buffer and save an emergence clip automatically when the signal crosses the trigger." />
               </label>
+              <p id="captureStatus" class="capture-status">Auto-capture off.</p>
               ${replicatorInjectionMarkup(config)}
               <div class="control-actions">
                 <button id="resetDefaults" type="button" title="Restore all parameter controls to their default values.">Reset to defaults</button>
               </div>
-              <p id="captureStatus" class="capture-status">Auto-capture off.</p>
             </div>
           </section>
         </div>
@@ -106,8 +105,8 @@ export function renderAppShell(
             </div>
           </section>
 
-          <section class="interaction-section collapsible-section" aria-label="Pair interaction lab" data-collapsible-section="interaction">
-            ${sectionHead("Pair Interaction Lab", "Enter two 64-byte cells and run the deterministic BFF execution step used inside a local interaction.")}
+          <section class="interaction-section collapsible-section collapsed" aria-label="Pair interaction lab" data-collapsible-section="interaction">
+            ${sectionHead("Pair Interaction Lab", "Enter two 64-byte cells and run the deterministic BFF execution step used inside a local interaction.", true)}
             <div class="section-body interaction-lab" data-collapse-body>
               <p class="interaction-note">Use this to inspect one two-cell execution step. The lab omits random mutation so the direct effect of the two tapes is reproducible. Inputs decode to 64 bytes; shorter cells are padded with <code>\\0</code>, longer cells are truncated, and escapes such as <code>\\0</code> and <code>\\x2b</code> let you enter exact byte values.</p>
               <div class="interaction-editors">
@@ -157,7 +156,7 @@ export function renderAppShell(
           <div class="section-body explainer-grid" data-collapse-body>
             <p><strong>State.</strong> The world is a fixed 240 by 135 grid. Each cell stores one 64-byte BFF tape. There are no separate organisms, resources, fitness scores, births, or deaths.</p>
             <p><strong>Language.</strong> BFF is a self-modifying extension of <a href="https://www.brainfuck.org/brainfuck.html" target="_blank" rel="noreferrer">Brainfuck</a>: the tape is both program and memory. Ten byte values execute as instructions: <code>[ ] + - . , &lt; &gt; { }</code>. Byte <code>0</code> is null and controls loops. Every other byte is inert data unless execution changes it.</p>
-            <p><strong>Pairing.</strong> With Fast mode on, each epoch uses a sparse synchronous non-overlapping local matching: neighboring cells are paired in shifted horizontal, vertical, diagonal, or radius-2 stripes, so the simulator schedules fewer interactions and avoids the paper scheduler's shuffled greedy pass. With Fast mode off, the simulator uses the paper-style scheduler: it creates a random permutation of all grid cell indices, visits cells in that order, samples one radius-2 neighbor for each unused visited cell, and accepts the pair only if that neighbor is also unused. Either way, a cell can participate in at most one interaction per epoch.</p>
+            <p><strong>Pairing.</strong> Each epoch uses the paper-style local scheduler. The simulator creates a random permutation of all grid cell indices, visits cells in that order, samples one radius-2 neighbor for each unused visited cell, and accepts the pair only if that neighbor is also unused. A cell can participate in at most one interaction per epoch.</p>
             <p><strong>Interaction.</strong> The two 64-byte tapes are joined into one 128-byte buffer. Mutation is applied first: each byte is independently replaced by a random byte with probability equal to the mutation rate. The BFF interpreter starts at program counter <code>0</code> with both heads at wrapped index <code>0</code>, runs for at most <code>8192</code> instruction reads, then writes the first 64 bytes back to the first cell and the last 64 bytes back to the second cell.</p>
             <p><strong>Skipped cells.</strong> A cell that does not execute still receives the same per-byte mutation step. No cell is protected from mutation.</p>
             <p><strong>Replication.</strong> A replicator is not labeled by the simulator. It is a 64-byte tape whose execution tends to write copies of itself, or close variants of itself, into neighboring tapes often enough that the tape becomes more common over time.</p>
@@ -222,20 +221,20 @@ function replicatorInjectionMarkup(config: SimulationConfig): string {
   `;
 }
 
-function sectionHead(title: string, subtitle: string): string {
+function sectionHead(title: string, subtitle: string, collapsed = false): string {
   return `
     <div class="section-head">
       <div>
         <h2>${title}</h2>
         <p>${subtitle}</p>
       </div>
-      ${collapseButton()}
+      ${collapseButton(collapsed)}
     </div>
   `;
 }
 
-function collapseButton(): string {
-  return `<button class="collapse-toggle" type="button" data-collapse-toggle aria-expanded="true">Hide</button>`;
+function collapseButton(collapsed = false): string {
+  return `<button class="collapse-toggle" type="button" data-collapse-toggle aria-expanded="${collapsed ? "false" : "true"}">${collapsed ? "Show" : "Hide"}</button>`;
 }
 
 function controlMarkup(
@@ -249,23 +248,6 @@ function controlMarkup(
     <label>
       <span class="label-row">${label} ${info(`${tooltip} Default: ${defaults[id]}.`)}</span>
       <input id="${id}" type="number" min="0" step="any" value="${value}" title="Default: ${defaults[id]}" />
-    </label>
-  `;
-}
-
-function toggleMarkup(
-  defaults: SimulationConfig,
-  label: string,
-  id: keyof SimulationConfig,
-  checked: boolean,
-  tooltip: string
-): string {
-  const defaultText = defaults[id] ? "on" : "off";
-  const fullTooltip = escapeAttribute(`${tooltip} Default: ${defaultText}.`);
-  return `
-    <label class="toggle-control">
-      <span class="label-row">${label} ${info(`${tooltip} Default: ${defaultText}.`)}</span>
-      <input id="${id}" type="checkbox" ${checked ? "checked" : ""} title="${fullTooltip}" data-tip="${fullTooltip}" />
     </label>
   `;
 }

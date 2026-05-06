@@ -157,7 +157,6 @@ function runSeededPatchControl(): void {
       gridWidth,
       gridHeight,
       seed,
-      fastMode: false,
       mutationRate: 0,
       checkpointInterval: epochBudget + 1,
       metricInterval: 32
@@ -209,7 +208,6 @@ function runSpontaneousBatch(seed: number): BatchResult {
   const sim = new BffSimulator({
     ...config,
     seed,
-    fastMode: false,
     mutationRate: spontaneousMutationRate,
     checkpointInterval: spontaneousEpochs + 1,
     metricInterval: spontaneousSampleInterval
