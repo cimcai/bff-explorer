@@ -1,5 +1,6 @@
 import "katex/dist/katex.min.css";
 import "./style.css";
+import { fixWebmDuration } from "@fix-webm-duration/fix";
 import type { WorkerInMessage, WorkerOutMessage } from "./types";
 import { DEFAULT_MAX_INSTRUCTION_READS, TILE_SIZE } from "./simulation/constants";
 import {
@@ -510,7 +511,7 @@ function startAutoCapture(): void {
     const mimeType = preferredVideoMimeType();
     captureRecorder = new MediaRecorder(
       captureStream,
-      mimeType ? { mimeType } : undefined
+      mediaRecorderOptions(mimeType)
     );
     captureRecorder.addEventListener("dataavailable", handleCaptureChunk);
     captureRecorder.addEventListener("stop", finalizeCaptureIfNeeded);
@@ -604,23 +605,28 @@ function handleCaptureChunk(event: BlobEvent): void {
   }
 }
 
-function finalizeCaptureIfNeeded(): void {
+async function finalizeCaptureIfNeeded(): Promise<void> {
   stopCaptureTracks();
   const shouldSave = captureState === "saving";
-  const chunks = captureBuffer.chunksForSave();
   captureRecorder = null;
   captureStream = null;
 
-  if (!shouldSave || chunks.length === 0) {
+  if (!shouldSave) {
     resetCaptureState("off");
     return;
   }
 
-  const mimeType = chunks[0].blob.type || "video/webm";
-  const video = new Blob(
-    chunks.map((chunk) => chunk.blob),
-    { type: mimeType }
+  const mimeType = preferredVideoMimeType() || "video/webm";
+  const rawVideo = await captureBuffer.toPlayableWebmBlob(mimeType);
+  const video = await fixWebmDuration(
+    rawVideo,
+    captureBuffer.durationMs(CAPTURE_TIMESLICE_MS),
+    { logger: false }
   );
+  if (video.size === 0) {
+    resetCaptureState("off");
+    return;
+  }
   const metadata = buildCaptureMetadata(video.size);
   const basename = `bff-emergence-epoch-${captureDetectionEpoch}`;
   downloadBlob(video, `${basename}.webm`);
@@ -711,13 +717,21 @@ function canUseCanvasCapture(): boolean {
 
 function preferredVideoMimeType(): string {
   const candidates = [
-    "video/webm;codecs=vp9",
     "video/webm;codecs=vp8",
+    "video/webm;codecs=vp9",
     "video/webm"
   ];
   return (
     candidates.find((mimeType) => MediaRecorder.isTypeSupported(mimeType)) ?? ""
   );
+}
+
+function mediaRecorderOptions(mimeType: string): MediaRecorderOptions {
+  const options: MediaRecorderOptions & {
+    videoKeyFrameIntervalDuration?: number;
+  } = mimeType ? { mimeType } : {};
+  options.videoKeyFrameIntervalDuration = CAPTURE_TIMESLICE_MS;
+  return options;
 }
 
 function downloadBlob(blob: Blob, filename: string): void {

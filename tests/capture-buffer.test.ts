@@ -32,4 +32,26 @@ describe("rolling capture buffer", () => {
       expect.any(Blob)
     ]);
   });
+
+  it("builds a playable WebM blob from a header and normalized cluster chunks", async () => {
+    const buffer = new RollingCaptureBuffer();
+    const ebmlHeader = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x01]);
+    const partialFirstCluster = new Uint8Array([0x1f, 0x43, 0xb6, 0x75, 0x02]);
+    const laterChunkMissingSplitByte = new Uint8Array([
+      0x43, 0xb6, 0x75, 0x03, 0x04
+    ]);
+
+    buffer.add(new Blob([ebmlHeader, partialFirstCluster]), 0);
+    buffer.add(new Blob([laterChunkMissingSplitByte]), 1_000);
+
+    const playable = new Uint8Array(
+      await (await buffer.toPlayableWebmBlob("video/webm")).arrayBuffer()
+    );
+
+    expect([...playable]).toEqual([
+      ...ebmlHeader,
+      0x1f,
+      ...laterChunkMissingSplitByte
+    ]);
+  });
 });
