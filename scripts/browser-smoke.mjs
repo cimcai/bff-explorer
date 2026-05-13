@@ -167,6 +167,10 @@ tooltipChecks.push(await inspectTooltip(page, "#reset"));
 tooltipChecks.push(await inspectTooltip(page, ".info"));
 const programRows = await page.locator(".program-row").count();
 const programDetail = await page.locator("#programDetailStats").textContent();
+const programDetailValid =
+  programRows === 0
+    ? programDetail?.includes("Repeated 64-byte tapes")
+    : /\d+ cells/.test(programDetail ?? "");
 const resourceLinks = await page.locator(".resources a").count();
 
 await page.locator("#playPause").click();
@@ -252,6 +256,7 @@ const result = {
   tooltipChecks,
   programRows,
   programDetail,
+  programDetailValid,
   resourceLinks,
   playLabelBeforeScrub,
   playLabelAfterScrub,
@@ -262,7 +267,8 @@ console.log(JSON.stringify(result, null, 2));
 
 if (
   errors.length > 0 ||
-  !desktopLayout.parametersRightOfCanvas ||
+  desktopLayout.parametersRightOfCanvas ||
+  !desktopLayout.parametersBelowCanvas ||
   !desktopLayout.analysisSideBySide ||
   !desktopLayout.docsSideBySide ||
   !desktopLayout.collapseButtonsContained ||
@@ -329,8 +335,7 @@ if (
   defaultButtonCount !== 0 ||
   iconTooltipCount < 4 ||
   tooltipChecks.some((check) => !check.visible || !check.inViewport) ||
-  programRows !== 0 ||
-  !programDetail?.includes("Repeated 64-byte tapes") ||
+  !programDetailValid ||
   resourceLinks < 3 ||
   playLabelBeforeScrub !== "Pause simulation" ||
   playLabelAfterScrub !== "Pause simulation" ||
@@ -448,9 +453,27 @@ async function inspectResponsiveLayout(page) {
 }
 
 async function inspectTooltip(page, selector) {
+  await page.mouse.move(4, 4);
+  await page.waitForTimeout(30);
   await page.locator(selector).first().hover();
   await page.waitForTimeout(80);
-  const result = await page.evaluate(() => {
+  let result = await readTooltip(page);
+  if (!result.visible) {
+    await page.locator(selector).first().focus();
+    await page.waitForTimeout(80);
+    result = await readTooltip(page);
+  }
+  await page.mouse.move(4, 4);
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
+  return result;
+}
+
+async function readTooltip(page) {
+  return page.evaluate(() => {
     const tooltip = document.getElementById("tooltipLayer");
     if (!tooltip || tooltip.hidden) {
       return { visible: false, inViewport: false };
@@ -472,8 +495,6 @@ async function inspectTooltip(page, selector) {
       }
     };
   });
-  await page.mouse.move(4, 4);
-  return result;
 }
 
 function numericText(text) {

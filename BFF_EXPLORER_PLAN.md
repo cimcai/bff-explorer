@@ -6,7 +6,7 @@ changes that preserve the simulator's substrate fidelity.
 ## Current Product Shape
 
 - The first screen is the soup canvas with play/reset/fullscreen controls
-  and checkpoint scrubbing.
+  and checkpoint scrubbing, followed by the collapsed Controls section below.
 - Every non-canvas section starts collapsed. Do not add always-open panels
   without a strong reason.
 - Defaults should favor autonomous replicator emergence from random soup.

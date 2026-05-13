@@ -111,5 +111,8 @@ describe("app shell markup", () => {
     expect(html.indexOf('class="workspace"')).toBeLessThan(
       html.indexOf('class="viewport"')
     );
+    expect(html.indexOf('class="viewport"')).toBeLessThan(
+      html.indexOf('data-collapsible-section="parameters"')
+    );
   });
 });

@@ -140,6 +140,7 @@ p,
 
 .simulation-layout .viewport {
   min-height: 520px;
+  height: min(68vh, 760px);
 }
 
 .analysis-layout,
@@ -955,12 +956,6 @@ code {
 }
 
 @media (min-width: 1400px) {
-  .simulation-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
-    min-height: 520px;
-    height: min(70vh, 760px);
-  }
-
   .analysis-layout {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
