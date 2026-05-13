@@ -603,6 +603,20 @@ dt {
   overflow-wrap: anywhere;
 }
 
+#chartEquation .katex-display {
+  max-width: 100%;
+  margin: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  text-align: left;
+}
+
+#chartEquation .katex {
+  color: var(--ink);
+  font-size: 1.05em;
+}
+
 #chartCommentary {
   color: var(--ink-soft);
   line-height: 1.45;
@@ -992,6 +1006,10 @@ code {
   .replicator-preview,
   .replicator-actions {
     grid-template-columns: 1fr;
+  }
+
+  #chartEquation .katex {
+    font-size: 0.94em;
   }
 
   #programDetailCanvas {

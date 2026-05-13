@@ -54,7 +54,7 @@ export function createMetricPanel(refs: MetricPanelRefs): MetricPanel {
     const option = CHART_METRICS[selectedChartMetric];
     setText("chartMetricLabel", option.label);
     setText("chartDescription", option.description);
-    chartEquation.textContent = renderChartMetricEquation(selectedChartMetric);
+    chartEquation.innerHTML = renderChartMetricEquation(selectedChartMetric);
     chartEquation.setAttribute("aria-label", option.equation);
     setText("chartCommentary", option.commentary);
     if (metric) {

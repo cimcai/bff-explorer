@@ -10,6 +10,9 @@ describe("app shell markup", () => {
     expect(html).toContain('id="mutationRate"');
     expect(html).toContain(`title="Default: ${config.mutationRate}"`);
     expect(html).toContain(`Default: ${config.mutationRate}.`);
+    expect(html).toContain("Defaults favor autonomous emergence");
+    expect(html).toContain("Optional Presets");
+    expect(html).not.toContain("default is zero");
     expect(html).toContain('id="timeBudgetMs"');
     expect(html).toContain(`title="Default: ${config.timeBudgetMs}"`);
     expect(html).toContain(`Default: ${config.timeBudgetMs}.`);
@@ -45,7 +48,7 @@ describe("app shell markup", () => {
     expect(html).toContain('id="loadTopProgramA"');
     expect(html).toContain('id="chartEquation"');
     expect(html).toContain('id="chartCommentary"');
-    expect(html).not.toContain("katex");
+    expect(html).toContain("katex");
     expect(html).toContain("https://arxiv.org/abs/2406.19108");
     expect(html).toContain("https://www.brainfuck.org/brainfuck.html");
     expect(html).toContain(

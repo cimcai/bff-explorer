@@ -32,13 +32,13 @@ export function renderAppShell(
           </div>
 
           <section class="panel parameters-panel collapsible-section collapsed" aria-label="Simulation controls" data-collapsible-section="parameters">
-            ${sectionHead("Controls", "Inject a known replicator or tune the run.", true)}
+            ${sectionHead("Controls", "Defaults favor autonomous emergence; presets are optional demos.", true)}
             <div class="section-body panel-grid" data-collapse-body>
               ${replicatorInjectionMarkup(config)}
               <details class="advanced-controls">
                 <summary>Advanced parameters</summary>
                 <div class="advanced-control-grid">
-                  ${controlMarkup(defaults, "Mutation rate", "mutationRate", String(config.mutationRate), "Probability that each byte is replaced by a random byte during an epoch. The default is zero because the visual run is most stable when nascent replicators are not damaged by background noise.")}
+                  ${controlMarkup(defaults, "Mutation rate", "mutationRate", String(config.mutationRate), "Probability that each byte is replaced by a random byte during an epoch. The default keeps low background mutation on so random soups can keep exploring candidate programs instead of only preserving injected presets.")}
                   ${controlMarkup(defaults, "Checkpoint interval", "checkpointInterval", String(config.checkpointInterval), "Number of epochs between saved scrub states. Coarser checkpoints use less memory.")}
                   ${controlMarkup(defaults, "Metric interval", "metricInterval", String(config.metricInterval), "Number of epochs between heavier metric calculations.")}
                   ${controlMarkup(defaults, "Time budget (milliseconds)", "timeBudgetMs", String(config.timeBudgetMs), "Approximate worker compute budget per interface update.")}
@@ -81,7 +81,7 @@ export function renderAppShell(
               </div>
               <strong id="chartMetricValue">0.000</strong>
               <div class="metric-exposition" aria-live="polite">
-                <div id="chartEquation" aria-label="${escapeAttribute(CHART_METRICS.structureScore.equation)}">${escapeText(renderChartMetricEquation("structureScore"))}</div>
+                <div id="chartEquation" aria-label="${escapeAttribute(CHART_METRICS.structureScore.equation)}">${renderChartMetricEquation("structureScore")}</div>
                 <p id="chartCommentary">${CHART_METRICS.structureScore.commentary}</p>
               </div>
               <canvas id="metricChart" width="920" height="220" aria-label="Selected emergence metric over time"></canvas>
@@ -189,8 +189,8 @@ function replicatorInjectionMarkup(config: SimulationConfig): string {
   return `
     <section class="injector-card" aria-label="Preset replicator injection">
       <div class="injector-head">
-        <h3>Preset Replicators</h3>
-        <p>Insert known exact-copy BFF tapes into random cells of the current frame, then watch whether they spread.</p>
+        <h3>Optional Presets</h3>
+        <p>Insert known exact-copy BFF tapes for comparison runs. The default setup is tuned for autonomous emergence from random soup.</p>
       </div>
       <label>
         <span class="label-row">Replicator ${info("Preset 64-byte BFF tape to insert. The current library contains the paper example plus neutral no-op filler variants that copy exactly under the BFF evaluator.")}</span>
@@ -293,13 +293,6 @@ function escapeAttribute(text: string): string {
   return text
     .replaceAll("&", "&amp;")
     .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
-function escapeText(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
 }

@@ -9,8 +9,9 @@ changes that preserve the simulator's substrate fidelity.
   and checkpoint scrubbing.
 - Every non-canvas section starts collapsed. Do not add always-open panels
   without a strong reason.
-- The Controls panel exposes preset injection first. Numeric simulation tuning
-  is nested under Advanced parameters.
+- Defaults should favor autonomous replicator emergence from random soup.
+  Injected presets are secondary comparison/demo tools, not the primary path.
+- Numeric simulation tuning is nested under Advanced parameters.
 - The program browser intentionally hides singleton programs. Random soup
   produces thousands of one-off tapes; showing them is UI noise.
 - Auto-capture was removed. Reintroduce recording only as a deliberately tested
@@ -20,6 +21,8 @@ changes that preserve the simulator's substrate fidelity.
 
 - Preserve deterministic simulation semantics: same seed/config should produce
   identical soup, metrics, and checkpoint branches.
+- Treat `DEFAULT_MUTATION_RATE` as a product default for autonomous emergence,
+  not as a value chosen to protect injected presets.
 - Keep `src/main.ts` as bootstrap/orchestration. New UI state should live in a
   focused controller under `src/ui/`.
 - Keep browser UI mobile-first, linear, and collapsed by default.

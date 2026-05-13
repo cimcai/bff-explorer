@@ -1,3 +1,4 @@
+import katex from "katex";
 import type { MetricSnapshot } from "../simulation/metrics";
 
 export type ChartMetricKey =
@@ -11,6 +12,7 @@ export interface ChartMetricDefinition {
   label: string;
   description: string;
   equation: string;
+  equationTex: string;
   commentary: string;
   format: (value: number) => string;
   yDomain: readonly [number, number];
@@ -25,6 +27,8 @@ export const CHART_METRICS: Record<ChartMetricKey, ChartMetricDefinition> = {
       "A sum of repeated-byte-pattern signal and executable-instruction enrichment.",
     equation:
       "structure = max(0, byte_entropy_bits_per_byte - compressed_bits_per_byte) + 0.25 * max(0, executable_byte_fraction / random_executable_fraction - 1), where byte_entropy_bits_per_byte is Shannon entropy across all byte values, compressed_bits_per_byte is the smaller estimated bits-per-byte cost from repeated 64-byte programs or repeated 8-byte blocks, executable_byte_fraction is executable_instruction_bytes / total_bytes, and random_executable_fraction = 10/256",
+    equationTex:
+      "\\begin{aligned}\\mathrm{structure}&=\\max(0,H_{\\mathrm{byte}}-C_{\\mathrm{bytes}})+0.25\\max\\!\\left(0,\\frac{f_{\\mathrm{exec}}}{10/256}-1\\right)\\\\H_{\\mathrm{byte}}&=\\text{Shannon entropy of all byte values, in bits per byte}\\\\C_{\\mathrm{bytes}}&=\\text{estimated compressed bits per byte from repeated tapes or 8-byte blocks}\\\\f_{\\mathrm{exec}}&=\\frac{\\text{number of executable BFF instruction bytes}}{\\text{total number of bytes}}\\end{aligned}",
     commentary:
       "Byte entropy measures how evenly byte values are distributed. Compressed bits per byte estimates how many bits are needed if repeated 64-byte programs or repeated 8-byte blocks are stored once and referenced by index. Executable byte fraction is the share of bytes that are real BFF instructions. This metric rises when exact byte patterns repeat and executable instructions become more common than the random baseline.",
     format: (value) => value.toFixed(3),
@@ -35,6 +39,8 @@ export const CHART_METRICS: Record<ChartMetricKey, ChartMetricDefinition> = {
     description: "How far the structure score has risen above its early baseline.",
     equation:
       "phase = current_structure_score - baseline_mean_structure_score, where baseline_mean_structure_score is the average of the first eight structure-score samples. baseline_standard_deviation is the standard deviation of those same first eight samples. A transition is flagged when phase is greater than max(0.08, 3 * baseline_standard_deviation) for three metric samples in a row.",
+    equationTex:
+      "\\begin{aligned}\\mathrm{phase}_t&=S_t-\\mu_0\\\\S_t&=\\text{structure score at the current metric sample}\\\\\\mu_0&=\\text{mean of the first eight structure-score samples}\\\\\\sigma_0&=\\text{standard deviation of the first eight structure-score samples}\\\\\\mathrm{transition}&\\iff \\mathrm{phase}_t>\\max(0.08,3\\sigma_0)\\text{ for three samples in a row}\\end{aligned}",
     commentary:
       "The first eight metric samples define the run's starting baseline. A transition is flagged only when structure rises above that baseline by a fixed minimum or by three baseline standard deviations, then remains above the threshold across repeated samples. This avoids treating one-sample noise as sustained repeated-program growth.",
     format: (value) => value.toFixed(3),
@@ -45,6 +51,8 @@ export const CHART_METRICS: Record<ChartMetricKey, ChartMetricDefinition> = {
     description: "The share of cells occupied by the most common 64-byte program.",
     equation:
       "dominant_program_fraction = number_of_cells_with_the_most_common_program / total_number_of_cells, where number_of_cells_with_the_most_common_program counts cells whose 64-byte tape exactly matches the most frequent 64-byte tape in the grid.",
+    equationTex:
+      "\\begin{aligned}\\mathrm{dominant\\ fraction}&=\\frac{n_{\\max}}{N_{\\mathrm{cells}}}\\\\n_{\\max}&=\\text{number of cells holding the most common exact 64-byte tape}\\\\N_{\\mathrm{cells}}&=\\text{total number of grid cells}\\end{aligned}",
     commentary:
       "Each cell contains one 64-byte program. If one exact program appears in more and more cells, interactions are writing that exact byte sequence into additional cells. This is easy to interpret, but it should be read together with the visual pattern and the other metrics because a dominant program is not automatically a self-replicator.",
     format: (value) => `${(value * 100).toFixed(2)}%`,
@@ -55,6 +63,8 @@ export const CHART_METRICS: Record<ChartMetricKey, ChartMetricDefinition> = {
     description: "The share of all bytes that are executable BFF instructions.",
     equation:
       "executable_byte_fraction = executable_instruction_byte_count / total_byte_count, where executable_instruction_byte_count is the number of bytes equal to one of []+-.,<>{} and total_byte_count is grid_cells * 64.",
+    equationTex:
+      "\\begin{aligned}f_{\\mathrm{exec}}&=\\frac{N_{\\mathrm{exec}}}{N_{\\mathrm{bytes}}}\\\\N_{\\mathrm{exec}}&=\\text{number of bytes equal to }[\\,]\\,+\\,-\\,.\\,,\\,<\\,>\\,\\{\\,\\}\\\\N_{\\mathrm{bytes}}&=\\text{total number of bytes in the grid}\\end{aligned}",
     commentary:
       "Only 10 byte values out of 256 are BFF instructions; all other nonzero byte values are data/no-ops. A random grid starts near 10/256, or about 3.91%. Rising executable-byte density means BFF instruction bytes are becoming more common than expected from random bytes.",
     format: (value) => `${(value * 100).toFixed(2)}%`,
@@ -65,6 +75,8 @@ export const CHART_METRICS: Record<ChartMetricKey, ChartMetricDefinition> = {
     description: "The share of cells that contain distinct 64-byte programs.",
     equation:
       "unique_program_fraction = number_of_distinct_64_byte_tapes / total_number_of_cells, where two tapes are distinct if any byte differs between their 64-byte sequences.",
+    equationTex:
+      "\\begin{aligned}\\mathrm{unique\\ fraction}&=\\frac{N_{\\mathrm{distinct}}}{N_{\\mathrm{cells}}}\\\\N_{\\mathrm{distinct}}&=\\text{number of distinct exact 64-byte tapes in the grid}\\\\N_{\\mathrm{cells}}&=\\text{total number of grid cells}\\end{aligned}",
     commentary:
       "In a random grid, almost every cell has a distinct 64-byte tape. If exact 64-byte tapes begin repeating, this value falls. A drop means the grid contains fewer distinct programs, which can happen when local interactions write the same program into multiple cells.",
     format: (value) => `${(value * 100).toFixed(2)}%`,
@@ -73,7 +85,11 @@ export const CHART_METRICS: Record<ChartMetricKey, ChartMetricDefinition> = {
 };
 
 export function renderChartMetricEquation(key: ChartMetricKey): string {
-  return CHART_METRICS[key].equation;
+  return katex.renderToString(CHART_METRICS[key].equationTex, {
+    displayMode: true,
+    throwOnError: false,
+    strict: "ignore"
+  });
 }
 
 export function formatChartMetricValue(

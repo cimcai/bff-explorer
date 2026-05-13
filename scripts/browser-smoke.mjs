@@ -121,6 +121,7 @@ await page.locator("#chartMetric").selectOption("dominantProgramFraction");
 const selectedMetric = await page.locator("#chartMetricLabel").textContent();
 const chartEquation = await page.locator("#chartEquation").getAttribute("aria-label");
 const chartCommentary = await page.locator("#chartCommentary").textContent();
+const chartEquationRendered = await page.locator("#chartEquation .katex").count();
 const chartOptionCount = await page.locator("#chartMetric option").count();
 const seedVisible = await page.locator("#seed").count();
 const checksumVisible = await page.locator("#checksum").count();
@@ -181,6 +182,7 @@ const result = {
   selectedMetric,
   chartEquation,
   chartCommentary,
+  chartEquationRendered,
   chartOptionCount,
   seedVisible,
   checksumVisible,
@@ -255,13 +257,14 @@ if (
   selectedMetric !== "Dominant program" ||
   !chartEquation?.includes("number_of_cells_with_the_most_common_program") ||
   !chartCommentary?.includes("Each cell contains one 64-byte program") ||
+  chartEquationRendered < 1 ||
   chartOptionCount !== 5 ||
   initiallyCollapsedSections !== 7 ||
   seedVisible !== 0 ||
   checksumVisible !== 0 ||
   redundantMetricCount !== 0 ||
   checkpointLatestCount !== 1 ||
-  resetMutationValue !== "0" ||
+  resetMutationValue !== "0.0001220703125" ||
   replicatorPresetOptions < 3 ||
   !initialReplicatorCode?.includes("[[{.>]-]") ||
   !injectorStatus?.includes("Inserted 3") ||

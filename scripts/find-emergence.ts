@@ -132,11 +132,12 @@ function runWorker(): void {
   const workerCount = numberFromEnv("FIND_WORKER_COUNT", 1);
   const seedStart = numberFromEnv("FIND_SEED_START", 1);
   const maxBatches = numberFromEnv("FIND_MAX_BATCHES", 64);
+  const config = defaultConfig();
   const rates = valuesFromEnv("FIND_RATES", [
-    0.001,
-    1 / 2048,
+    config.mutationRate,
     1 / 4096,
-    0
+    1 / 2048,
+    0.001
   ]);
 
   for (let batch = worker; batch < maxBatches; batch += workerCount) {

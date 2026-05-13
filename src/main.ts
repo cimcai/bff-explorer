@@ -1,3 +1,4 @@
+import "katex/dist/katex.min.css";
 import "./style.css";
 import type { WorkerInMessage, WorkerOutMessage } from "./types";
 import { TILE_SIZE } from "./simulation/constants";

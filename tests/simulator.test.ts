@@ -4,9 +4,13 @@ import { TAPE_SIZE } from "../src/simulation/constants";
 import { knownReplicatorBytes } from "../src/simulation/knownReplicator";
 import { replicatorPresetBytes } from "../src/simulation/replicatorPresets";
 import { computeTopPrograms } from "../src/simulation/programSummary";
-import { BffSimulator } from "../src/simulation/simulator";
+import { BffSimulator, defaultConfig } from "../src/simulation/simulator";
 
 describe("BffSimulator checkpoints", () => {
+  it("defaults to low nonzero mutation for autonomous exploration", () => {
+    expect(defaultConfig().mutationRate).toBe(1 / 8192);
+  });
+
   it("is exactly reproducible for identical seeds and configs", () => {
     const config = {
       gridWidth: 12,

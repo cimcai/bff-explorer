@@ -24,12 +24,16 @@ Audience: future dev agents.
   not disturb future schedule or mutation RNG streams.
 - Runtime updates for mutation/checkpoint/metric/time budget must not reset the
   soup.
+- The default mutation rate is intentionally low and nonzero. It is chosen for
+  autonomous exploration from random soup; injected presets are secondary
+  comparison runs.
 
 ## UI Invariants
 
 - First viewport should stay canvas-first on desktop and mobile.
 - All non-canvas sections start collapsed.
-- Controls panel flow: preset injection first, advanced numeric tuning second.
+- Controls panel copy should frame presets as optional demos. The default run
+  should not depend on users injecting a known replicator.
 - Repeated Programs should show only programs with `count > 1`.
 - Long explanations belong in collapsed docs or tooltips, not in always-visible
   first-load UI.
