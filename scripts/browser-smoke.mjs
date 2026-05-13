@@ -31,10 +31,9 @@ await mobilePage.close();
 
 const initiallyCollapsedSections = await page.locator(".collapsible-section.collapsed").count();
 await page.locator('[data-collapsible-section="parameters"] [data-collapse-toggle]').click();
-await page.locator(".advanced-controls > summary").click();
+await page.locator('[data-collapsible-section="movie-capture"] [data-collapse-toggle]').click();
 const movieCaptureToggleCount = await page.locator("#autoMovieCapture").count();
 const movieCaptureDefaultChecked = await page.locator("#autoMovieCapture").isChecked();
-await page.locator(".movie-capture-controls > summary").click();
 const movieCaptureInitialStatus = await page.locator("#movieCaptureStatus").textContent();
 const movieCaptureDisabled = await page.locator("#autoMovieCapture").isDisabled();
 let movieCaptureStartedStatus = movieCaptureInitialStatus;
@@ -50,6 +49,7 @@ const movieCaptureCanvasSize = await page.locator("#movieCaptureCanvas").evaluat
   width: canvas.width,
   height: canvas.height
 }));
+await page.locator('[data-collapsible-section="replicator"] [data-collapse-toggle]').click();
 await page.locator("#mutationRate").fill("0.002");
 await page.locator("#resetDefaults").click();
 const resetMutationValue = await page.locator("#mutationRate").inputValue();
@@ -67,6 +67,8 @@ await page.locator("#loadReplicatorToLab").click();
 const loadedReplicatorA = await page.locator("#interactionCellA").inputValue();
 const collapseToggleCount = await page.locator("[data-collapse-toggle]").count();
 const interactionInitiallyCollapsed = await isSectionCollapsed(page, "interaction");
+const replicatorExpanded = !(await isSectionCollapsed(page, "replicator"));
+const movieCaptureExpanded = !(await isSectionCollapsed(page, "movie-capture"));
 await page.locator('[data-collapsible-section="interaction"] [data-collapse-toggle]').click();
 const interactionExpanded = !(await isSectionCollapsed(page, "interaction"));
 await page.locator('[data-collapsible-section="parameters"] [data-collapse-toggle]').click();
@@ -245,6 +247,8 @@ const result = {
   collapseToggleCount,
   interactionInitiallyCollapsed,
   interactionExpanded,
+  replicatorExpanded,
+  movieCaptureExpanded,
   parametersCollapsed,
   parametersExpanded,
   interactionStatus,
@@ -269,16 +273,22 @@ if (
   errors.length > 0 ||
   desktopLayout.parametersRightOfCanvas ||
   !desktopLayout.parametersBelowCanvas ||
+  !desktopLayout.replicatorBelowParameters ||
+  !desktopLayout.movieCaptureBelowReplicator ||
   !desktopLayout.analysisSideBySide ||
   !desktopLayout.docsSideBySide ||
   !desktopLayout.collapseButtonsContained ||
   !desktopLayout.noHorizontalOverflow ||
   !midLayout.parametersBelowCanvas ||
+  !midLayout.replicatorBelowParameters ||
+  !midLayout.movieCaptureBelowReplicator ||
   !midLayout.analysisStacked ||
   !midLayout.docsStacked ||
   !midLayout.collapseButtonsContained ||
   !midLayout.noHorizontalOverflow ||
   !mobileLayout.parametersBelowCanvas ||
+  !mobileLayout.replicatorBelowParameters ||
+  !mobileLayout.movieCaptureBelowReplicator ||
   !mobileLayout.analysisStacked ||
   !mobileLayout.docsStacked ||
   !mobileLayout.checkpointButtonSameTopRow ||
@@ -303,7 +313,7 @@ if (
   metricChartSize.backingWidth < metricChartSize.cssWidth ||
   metricChartSize.backingHeight < metricChartSize.cssHeight ||
   chartOptionCount !== 5 ||
-  initiallyCollapsedSections !== 7 ||
+  initiallyCollapsedSections !== 9 ||
   seedVisible !== 0 ||
   checksumVisible !== 0 ||
   redundantMetricCount !== 0 ||
@@ -322,9 +332,11 @@ if (
   repeatedRowsAfterInjection < 1 ||
   !repeatedDetailAfterInjection?.includes("3 cells") ||
   !loadedReplicatorA?.includes("[[{.>]-]") ||
-  collapseToggleCount !== 7 ||
+  collapseToggleCount !== 9 ||
   !interactionInitiallyCollapsed ||
   !interactionExpanded ||
+  !replicatorExpanded ||
+  !movieCaptureExpanded ||
   !parametersCollapsed ||
   !parametersExpanded ||
   !interactionStatus?.includes("1 reads") ||
@@ -399,6 +411,8 @@ async function inspectResponsiveLayout(page) {
     };
     const viewport = rect("#viewport");
     const parameters = rect('[data-collapsible-section="parameters"]');
+    const replicator = rect('[data-collapsible-section="replicator"]');
+    const movieCapture = rect('[data-collapsible-section="movie-capture"]');
     const programs = rect('[data-collapsible-section="programs"]');
     const interaction = rect('[data-collapsible-section="interaction"]');
     const explanation = rect('[data-collapsible-section="explanation"]');
@@ -426,6 +440,11 @@ async function inspectResponsiveLayout(page) {
         Boolean(viewport && parameters) && parameters.left >= viewport.right + 8,
       parametersBelowCanvas:
         Boolean(viewport && parameters) && parameters.top >= viewport.bottom + 8,
+      replicatorBelowParameters:
+        Boolean(parameters && replicator) && replicator.top >= parameters.bottom + 8,
+      movieCaptureBelowReplicator:
+        Boolean(replicator && movieCapture) &&
+        movieCapture.top >= replicator.bottom + 8,
       analysisSideBySide:
         Boolean(programs && interaction) &&
         Math.abs(programs.top - interaction.top) < 24 &&

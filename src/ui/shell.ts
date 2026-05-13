@@ -30,23 +30,30 @@ export function renderAppShell(
             </div>
           </div>
 
-          <section class="panel parameters-panel collapsible-section collapsed" aria-label="Simulation controls" data-collapsible-section="parameters">
-            ${sectionHead("Controls", "Defaults favor autonomous emergence; presets are optional demos.", true)}
+          <section class="panel parameters-panel collapsible-section collapsed" aria-label="Simulation parameters" data-collapsible-section="parameters">
+            ${sectionHead("Parameters", "Defaults favor autonomous emergence; tune mutation, checkpoints, and worker pacing.", true)}
             <div class="section-body panel-grid" data-collapse-body>
+              ${controlMarkup(defaults, "Mutation rate", "mutationRate", String(config.mutationRate), "Probability that each byte is replaced by a random byte during an epoch. The default keeps low background mutation on so random soups can keep exploring candidate programs instead of only preserving injected presets.")}
+              ${controlMarkup(defaults, "Checkpoint interval", "checkpointInterval", String(config.checkpointInterval), "Number of epochs between saved scrub states. Coarser checkpoints use less memory.")}
+              ${controlMarkup(defaults, "Metric interval", "metricInterval", String(config.metricInterval), "Number of epochs between heavier metric calculations.")}
+              ${controlMarkup(defaults, "Time budget (milliseconds)", "timeBudgetMs", String(config.timeBudgetMs), "Approximate worker compute budget per interface update.")}
+              <div class="control-actions">
+                <button id="resetDefaults" type="button" title="Restore all parameter controls to their default values.">Reset to defaults</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel replicator-section collapsible-section collapsed" aria-label="Replicator injection" data-collapsible-section="replicator">
+            ${sectionHead("Replicator Injection", "Optional known-copy BFF tapes for comparison runs.", true)}
+            <div class="section-body" data-collapse-body>
               ${replicatorInjectionMarkup(config)}
-              <details class="advanced-controls">
-                <summary>Advanced parameters</summary>
-                <div class="advanced-control-grid">
-                  ${controlMarkup(defaults, "Mutation rate", "mutationRate", String(config.mutationRate), "Probability that each byte is replaced by a random byte during an epoch. The default keeps low background mutation on so random soups can keep exploring candidate programs instead of only preserving injected presets.")}
-                  ${controlMarkup(defaults, "Checkpoint interval", "checkpointInterval", String(config.checkpointInterval), "Number of epochs between saved scrub states. Coarser checkpoints use less memory.")}
-                  ${controlMarkup(defaults, "Metric interval", "metricInterval", String(config.metricInterval), "Number of epochs between heavier metric calculations.")}
-                  ${controlMarkup(defaults, "Time budget (milliseconds)", "timeBudgetMs", String(config.timeBudgetMs), "Approximate worker compute budget per interface update.")}
-                  <div class="control-actions">
-                    <button id="resetDefaults" type="button" title="Restore all parameter controls to their default values.">Reset to defaults</button>
-                  </div>
-                  ${movieCaptureMarkup()}
-                </div>
-              </details>
+            </div>
+          </section>
+
+          <section class="panel movie-section collapsible-section collapsed" aria-label="Movie capture" data-collapsible-section="movie-capture">
+            ${sectionHead("Movie Capture", "Auto-save a shareable movie when replication is detected.", true)}
+            <div class="section-body" data-collapse-body>
+              ${movieCaptureMarkup()}
             </div>
           </section>
         </div>
@@ -187,11 +194,7 @@ function replicatorInjectionMarkup(config: SimulationConfig): string {
   const defaultPreset = replicatorPresetById(DEFAULT_REPLICATOR_PRESET_ID);
   const maxCells = config.gridWidth * config.gridHeight;
   return `
-    <section class="injector-card" aria-label="Preset replicator injection">
-      <div class="injector-head">
-        <h3>Optional Presets</h3>
-        <p>Insert known exact-copy BFF tapes for comparison runs. The default setup is tuned for autonomous emergence from random soup.</p>
-      </div>
+    <div class="replicator-controls" aria-label="Preset replicator injection controls">
       <label>
         <span class="label-row">Replicator ${info("Preset 64-byte BFF tape to insert. The current library contains the paper example plus neutral no-op filler variants that copy exactly under the BFF evaluator.")}</span>
         <select id="replicatorPreset">
@@ -217,7 +220,7 @@ function replicatorInjectionMarkup(config: SimulationConfig): string {
         <button id="loadReplicatorToLab" type="button" title="Copy this preset into the pair interaction lab">Load in lab</button>
       </div>
       <p id="injectorStatus" class="injector-status" aria-live="polite">Ready to inject.</p>
-    </section>
+    </div>
   `;
 }
 
@@ -254,8 +257,7 @@ function controlMarkup(
 
 function movieCaptureMarkup(): string {
   return `
-    <details class="movie-capture-controls">
-      <summary>Replication movie capture</summary>
+    <div class="movie-capture-controls">
       <label class="movie-capture-toggle">
         <input id="autoMovieCapture" type="checkbox" />
         <span>Auto-save replication movie</span>
@@ -263,7 +265,7 @@ function movieCaptureMarkup(): string {
       <p id="movieCaptureStatus" class="movie-capture-status" aria-live="polite">Movie capture off.</p>
       <button id="shareMovieCapture" type="button" hidden>Share last movie</button>
       <canvas id="movieCaptureCanvas" class="movie-capture-canvas" width="1440" height="810" aria-hidden="true"></canvas>
-    </details>
+    </div>
   `;
 }
 

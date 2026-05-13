@@ -139,8 +139,8 @@ p,
 }
 
 .simulation-layout .viewport {
-  min-height: 520px;
-  height: min(68vh, 760px);
+  min-height: 430px;
+  height: min(60vh, 700px);
 }
 
 .analysis-layout,
@@ -388,8 +388,7 @@ label {
 
 .parameters-panel label,
 .parameters-panel .control-actions,
-.parameters-panel .injector-card,
-.parameters-panel .advanced-controls {
+.replicator-controls label {
   grid-column: 1;
 }
 
@@ -408,29 +407,11 @@ label {
   border-color: #b8d6d2;
 }
 
-.injector-card {
+.replicator-controls {
   display: grid;
   gap: 12px;
-  border: 1px solid var(--hairline);
-  border-radius: 8px;
-  padding: 12px;
-  background: var(--surface);
 }
 
-.injector-head {
-  display: grid;
-  gap: 3px;
-}
-
-.injector-head h3 {
-  margin: 0;
-  color: var(--ink);
-  font-size: 14px;
-  font-weight: 650;
-  letter-spacing: 0;
-}
-
-.injector-head p,
 #replicatorDescription,
 .injector-status {
   color: var(--muted);
@@ -487,32 +468,9 @@ label {
   color: var(--danger);
 }
 
-.advanced-controls {
-  display: grid;
-  gap: 10px;
-  border-top: 1px solid var(--hairline);
-  padding-top: 10px;
-}
-
-.advanced-controls summary {
-  width: max-content;
-  color: var(--ink-soft);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.advanced-control-grid {
-  display: grid;
-  gap: 12px;
-  margin-top: 10px;
-}
-
 .movie-capture-controls {
   display: grid;
   gap: 8px;
-  border-top: 1px solid var(--hairline);
-  padding-top: 10px;
 }
 
 .movie-capture-toggle {

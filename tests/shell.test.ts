@@ -11,7 +11,10 @@ describe("app shell markup", () => {
     expect(html).toContain(`title="Default: ${config.mutationRate}"`);
     expect(html).toContain(`Default: ${config.mutationRate}.`);
     expect(html).toContain("Defaults favor autonomous emergence");
-    expect(html).toContain("Optional Presets");
+    expect(html).toContain("Replicator Injection");
+    expect(html).toContain('data-collapsible-section="replicator"');
+    expect(html).toContain('data-collapsible-section="movie-capture"');
+    expect(html).toContain("Movie Capture");
     expect(html).not.toContain("default is zero");
     expect(html).toContain('id="timeBudgetMs"');
     expect(html).toContain(`title="Default: ${config.timeBudgetMs}"`);
@@ -26,8 +29,8 @@ describe("app shell markup", () => {
     expect(html).toContain('id="reset"');
     expect(html).toContain("Reset with a new randomized soup");
     expect(html).not.toContain('id="newRun"');
-    expect(html).toContain("<summary>Advanced parameters</summary>");
-    expect(html).toContain("<summary>Replication movie capture</summary>");
+    expect(html).not.toContain("<summary>Advanced parameters</summary>");
+    expect(html).not.toContain("Replication movie capture</summary>");
     expect(html).toContain('id="autoMovieCapture"');
     expect(html).toContain('id="movieCaptureStatus"');
     expect(html).toContain('id="movieCaptureCanvas"');
@@ -85,15 +88,17 @@ describe("app shell markup", () => {
   it("starts every non-canvas section collapsed", () => {
     const html = renderAppShell(defaultConfig(), defaultConfig());
 
-    expect(html.match(/data-collapse-toggle/g)).toHaveLength(7);
+    expect(html.match(/data-collapse-toggle/g)).toHaveLength(9);
     expect(html).toContain('data-collapsible-section="parameters"');
+    expect(html).toContain('data-collapsible-section="replicator"');
+    expect(html).toContain('data-collapsible-section="movie-capture"');
     expect(html).toContain('data-collapsible-section="emergence"');
     expect(html).toContain('data-collapsible-section="programs"');
     expect(html).toContain('data-collapsible-section="interaction"');
     expect(html).toContain(
       'class="interaction-section collapsible-section collapsed"'
     );
-    expect(html.match(/aria-expanded="false">Show<\/button>/g)).toHaveLength(7);
+    expect(html.match(/aria-expanded="false">Show<\/button>/g)).toHaveLength(9);
     expect(html).toContain('data-collapsible-section="diagnostics"');
     expect(html).toContain('data-collapsible-section="explanation"');
     expect(html).toContain('data-collapsible-section="resources"');
@@ -113,6 +118,15 @@ describe("app shell markup", () => {
     );
     expect(html.indexOf('class="viewport"')).toBeLessThan(
       html.indexOf('data-collapsible-section="parameters"')
+    );
+    expect(html.indexOf('data-collapsible-section="parameters"')).toBeLessThan(
+      html.indexOf('data-collapsible-section="replicator"')
+    );
+    expect(html.indexOf('data-collapsible-section="replicator"')).toBeLessThan(
+      html.indexOf('data-collapsible-section="movie-capture"')
+    );
+    expect(html.indexOf('data-collapsible-section="movie-capture"')).toBeLessThan(
+      html.indexOf('data-collapsible-section="emergence"')
     );
   });
 });
