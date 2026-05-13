@@ -214,19 +214,20 @@ body.viewport-fullscreen-active {
 }
 
 .canvas-hud button {
-  min-width: 34px;
+  min-width: 44px;
   min-height: 30px;
-  padding: 0;
+  padding: 0 9px;
 }
 
 .icon-button {
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: 34px;
+  width: auto;
   height: 30px;
   color: #17201e;
-  font-size: 15px;
+  font-size: 12px;
+  font-weight: 650;
   line-height: 1;
 }
 
@@ -281,6 +282,11 @@ body.viewport-fullscreen-active {
 .parameters-panel {
   align-self: stretch;
   overflow: auto;
+}
+
+.parameters-panel.collapsed {
+  align-self: start;
+  overflow: visible;
 }
 
 .panel,
@@ -381,26 +387,9 @@ label {
 
 .parameters-panel label,
 .parameters-panel .control-actions,
-.parameters-panel .capture-status,
-.parameters-panel .injector-card {
+.parameters-panel .injector-card,
+.parameters-panel .advanced-controls {
   grid-column: 1;
-}
-
-.toggle-control {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-}
-
-.toggle-control .label-row {
-  grid-column: 1;
-}
-
-.toggle-control input {
-  grid-column: 2;
-  grid-row: 1;
-  width: 18px;
-  min-height: 18px;
-  accent-color: var(--accent);
 }
 
 .control-actions {
@@ -416,24 +405,6 @@ label {
   color: #0f373d;
   background: var(--accent-soft);
   border-color: #b8d6d2;
-}
-
-.capture-status {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.capture-status.active {
-  color: var(--accent-strong);
-}
-
-.capture-status.triggered {
-  color: var(--gold);
-}
-
-.capture-status.error {
-  color: var(--danger);
 }
 
 .injector-card {
@@ -515,6 +486,27 @@ label {
   color: var(--danger);
 }
 
+.advanced-controls {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--hairline);
+  padding-top: 10px;
+}
+
+.advanced-controls summary {
+  width: max-content;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.advanced-control-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
 .label-row,
 dt {
   display: inline-flex;
@@ -563,6 +555,7 @@ dt {
 
 .metric-select-label {
   min-width: min(300px, 100%);
+  margin-bottom: 10px;
 }
 
 .metric-card {
@@ -608,20 +601,6 @@ dt {
   font-size: 13px;
   line-height: 1.45;
   overflow-wrap: anywhere;
-}
-
-#chartEquation .katex-display {
-  max-width: 100%;
-  margin: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 2px;
-  text-align: left;
-}
-
-#chartEquation .katex {
-  color: var(--ink);
-  font-size: 1.05em;
 }
 
 #chartCommentary {
@@ -976,8 +955,8 @@ code {
   }
 
   .simulation-layout .viewport {
-    min-height: 420px;
-    height: 64vh;
+    min-height: 320px;
+    height: min(56vh, 420px);
   }
 
   .panel-grid,
@@ -1013,10 +992,6 @@ code {
   .replicator-preview,
   .replicator-actions {
     grid-template-columns: 1fr;
-  }
-
-  #chartEquation .katex {
-    font-size: 0.94em;
   }
 
   #programDetailCanvas {

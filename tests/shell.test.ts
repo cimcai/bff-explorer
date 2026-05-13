@@ -13,13 +13,14 @@ describe("app shell markup", () => {
     expect(html).toContain('id="timeBudgetMs"');
     expect(html).toContain(`title="Default: ${config.timeBudgetMs}"`);
     expect(html).toContain(`Default: ${config.timeBudgetMs}.`);
-    expect(html).toContain('id="autoCapture"');
-    expect(html).toContain('id="captureStatus"');
+    expect(html).not.toContain('id="autoCapture"');
+    expect(html).not.toContain('id="captureStatus"');
     expect(html).toContain('id="replicatorPreset"');
     expect(html).toContain('id="replicatorCount"');
     expect(html).toContain('id="injectReplicator"');
     expect(html).toContain('id="loadReplicatorToLab"');
     expect(html).toContain('id="resetDefaults"');
+    expect(html).toContain("<summary>Advanced parameters</summary>");
     expect(html).not.toContain(">Default</button>");
   });
 
@@ -44,7 +45,7 @@ describe("app shell markup", () => {
     expect(html).toContain('id="loadTopProgramA"');
     expect(html).toContain('id="chartEquation"');
     expect(html).toContain('id="chartCommentary"');
-    expect(html).toContain("katex");
+    expect(html).not.toContain("katex");
     expect(html).toContain("https://arxiv.org/abs/2406.19108");
     expect(html).toContain("https://www.brainfuck.org/brainfuck.html");
     expect(html).toContain(
@@ -60,7 +61,7 @@ describe("app shell markup", () => {
     const html = renderAppShell(defaultConfig(), defaultConfig());
 
     expect(html).toContain("bits per byte");
-    expect(html).toContain("Run Diagnostics");
+    expect(html).toContain("Diagnostics");
     expect(html).toContain("Epochs per second");
     expect(html).toContain("Render frames per second");
     expect(html).toContain("Active operations per epoch");
@@ -71,7 +72,7 @@ describe("app shell markup", () => {
     expect(html).not.toContain("program hash");
   });
 
-  it("marks every non-canvas section as collapsible", () => {
+  it("starts every non-canvas section collapsed", () => {
     const html = renderAppShell(defaultConfig(), defaultConfig());
 
     expect(html.match(/data-collapse-toggle/g)).toHaveLength(7);
@@ -82,7 +83,7 @@ describe("app shell markup", () => {
     expect(html).toContain(
       'class="interaction-section collapsible-section collapsed"'
     );
-    expect(html).toContain('aria-expanded="false">Show</button>');
+    expect(html.match(/aria-expanded="false">Show<\/button>/g)).toHaveLength(7);
     expect(html).toContain('data-collapsible-section="diagnostics"');
     expect(html).toContain('data-collapsible-section="explanation"');
     expect(html).toContain('data-collapsible-section="resources"');

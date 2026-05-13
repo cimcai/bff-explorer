@@ -38,9 +38,7 @@ describe("metric chart definitions", () => {
     const jargonyWords = /\bclonal\b|\bdictionary\b|\blineages\b|\bmotif\b/i;
     for (const definition of Object.values(CHART_METRICS)) {
       expect(definition.equation.length).toBeGreaterThan(8);
-      expect(definition.equationTex.length).toBeGreaterThan(8);
       expect(definition.equation).toMatch(/\bwhere\b/i);
-      expect(definition.equationTex).toContain("\\text{");
       expect(definition.commentary.length).toBeGreaterThan(40);
       expect(definition.commentary).not.toMatch(jargonyWords);
     }
@@ -49,9 +47,9 @@ describe("metric chart definitions", () => {
   it("keeps displayed formulas self-contained instead of using bare shorthand", () => {
     for (const definition of Object.values(CHART_METRICS)) {
       const unresolvedBareSymbols =
-        /\\frac\{\\max_i n_i\}|S_t-\\mu_\{?0\}?\\b|\\sigma_0\)\s*$/;
+        /\bS_t\b|\bmu_0\b|\bsigma_0\b|n_max|N_cells/;
 
-      expect(definition.equationTex).not.toMatch(unresolvedBareSymbols);
+      expect(definition.equation).not.toMatch(unresolvedBareSymbols);
     }
   });
 
@@ -65,11 +63,11 @@ describe("metric chart definitions", () => {
     ]);
   });
 
-  it("renders equations as KaTeX HTML", () => {
-    const html = renderChartMetricEquation("structureScore");
+  it("renders equations as plain text", () => {
+    const text = renderChartMetricEquation("structureScore");
 
-    expect(html).toContain("katex");
-    expect(html).toContain("math");
+    expect(text).toContain("structure =");
+    expect(text).not.toContain("<");
   });
 
   it("draws labelled axes without placeholder text before samples arrive", () => {

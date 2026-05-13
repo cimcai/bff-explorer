@@ -18,10 +18,10 @@ export function renderAppShell(
           <div class="viewport" id="viewport">
             <canvas id="dish" width="1920" height="1080" aria-label="2D BFF soup"></canvas>
             <div class="canvas-hud canvas-hud-top" aria-label="Canvas controls">
-              <button id="playPause" class="icon-button" type="button" aria-label="Play simulation" title="Play simulation" data-tip="Play simulation">▶</button>
-              <button id="reset" class="icon-button" type="button" aria-label="Reset simulation" title="Reset simulation" data-tip="Reset simulation with the current parameter values">↻</button>
-              <button id="newRun" class="icon-button" type="button" aria-label="New random soup" title="New random soup" data-tip="Start a new randomized soup with the current parameter values">✦</button>
-              <button id="fullscreen" class="icon-button" type="button" aria-label="Enter fullscreen" title="Fullscreen" data-tip="Enter fullscreen">⛶</button>
+              <button id="playPause" class="icon-button" type="button" aria-label="Play simulation" title="Play simulation" data-tip="Play simulation">Play</button>
+              <button id="reset" class="icon-button" type="button" aria-label="Reset simulation" title="Reset simulation" data-tip="Reset simulation with the current parameter values">Reset</button>
+              <button id="newRun" class="icon-button" type="button" aria-label="New random soup" title="New random soup" data-tip="Start a new randomized soup with the current parameter values">New</button>
+              <button id="fullscreen" class="icon-button" type="button" aria-label="Enter fullscreen" title="Fullscreen" data-tip="Enter fullscreen">Full</button>
             </div>
             <div class="canvas-scrubber" aria-label="Checkpoint scrubber">
               <div id="checkpointLabel">Checkpoint 0/0</div>
@@ -31,49 +31,49 @@ export function renderAppShell(
             </div>
           </div>
 
-          <section class="panel parameters-panel collapsible-section" aria-label="Simulation parameters" data-collapsible-section="parameters">
-            ${sectionHead("Parameters", "Core run controls for the current soup.")}
+          <section class="panel parameters-panel collapsible-section collapsed" aria-label="Simulation controls" data-collapsible-section="parameters">
+            ${sectionHead("Controls", "Inject a known replicator or tune the run.", true)}
             <div class="section-body panel-grid" data-collapse-body>
-              ${controlMarkup(defaults, "Mutation rate", "mutationRate", String(config.mutationRate), "Probability that each byte is replaced by a random byte during an epoch. The default is zero because the 2D visual run is most stable when nascent replicators are not damaged by background noise; the paper default 0.000244 and 0.001 are useful comparison values.")}
-              ${controlMarkup(defaults, "Checkpoint interval", "checkpointInterval", String(config.checkpointInterval), "Number of epochs between saved scrub states. Coarser checkpoints use much less memory and avoid scrub stalls.")}
-              ${controlMarkup(defaults, "Metric interval", "metricInterval", String(config.metricInterval), "Number of epochs between heavier emergence metric calculations. Lower values update the chart faster but use more processor time.")}
-              ${controlMarkup(defaults, "Time budget (milliseconds)", "timeBudgetMs", String(config.timeBudgetMs), "Approximate worker compute budget per interface update. Higher values advance faster but can make updates less fluid.")}
-              <label class="toggle-control">
-                <span class="label-row">Auto-capture emergence ${info("Continuously keeps only a short rolling video buffer. When the emergence signal crosses the trigger, it saves about 30 seconds before detection and 30 seconds after detection as a WebM plus metadata JSON.")}</span>
-                <input id="autoCapture" type="checkbox" title="Auto-capture emergence" data-tip="Keep a short rolling video buffer and save an emergence clip automatically when the signal crosses the trigger." />
-              </label>
-              <p id="captureStatus" class="capture-status">Auto-capture off.</p>
               ${replicatorInjectionMarkup(config)}
-              <div class="control-actions">
-                <button id="resetDefaults" type="button" title="Restore all parameter controls to their default values.">Reset to defaults</button>
-              </div>
+              <details class="advanced-controls">
+                <summary>Advanced parameters</summary>
+                <div class="advanced-control-grid">
+                  ${controlMarkup(defaults, "Mutation rate", "mutationRate", String(config.mutationRate), "Probability that each byte is replaced by a random byte during an epoch. The default is zero because the visual run is most stable when nascent replicators are not damaged by background noise.")}
+                  ${controlMarkup(defaults, "Checkpoint interval", "checkpointInterval", String(config.checkpointInterval), "Number of epochs between saved scrub states. Coarser checkpoints use less memory.")}
+                  ${controlMarkup(defaults, "Metric interval", "metricInterval", String(config.metricInterval), "Number of epochs between heavier metric calculations.")}
+                  ${controlMarkup(defaults, "Time budget (milliseconds)", "timeBudgetMs", String(config.timeBudgetMs), "Approximate worker compute budget per interface update.")}
+                  <div class="control-actions">
+                    <button id="resetDefaults" type="button" title="Restore all parameter controls to their default values.">Reset to defaults</button>
+                  </div>
+                </div>
+              </details>
             </div>
           </section>
         </div>
 
-        <section class="chart-section collapsible-section" aria-label="Emergence metric chart" data-collapsible-section="emergence">
+        <section class="chart-section collapsible-section collapsed" aria-label="Emergence metric chart" data-collapsible-section="emergence">
           <div class="chart-head">
             <div>
               <h2>Emergence Signal</h2>
               <p id="chartDescription">${CHART_METRICS.structureScore.description}</p>
             </div>
             <div class="section-actions">
-              <label class="metric-select-label">
-                <span>Metric</span>
-                <select id="chartMetric">
-                  ${Object.entries(CHART_METRICS)
-                    .map(
-                      ([key, option]) =>
-                        `<option value="${key}">${option.label}</option>`
-                    )
-                    .join("")}
-                </select>
-              </label>
-              ${collapseButton()}
+              ${collapseButton(true)}
             </div>
           </div>
 
           <div class="section-body" data-collapse-body>
+            <label class="metric-select-label">
+              <span>Metric</span>
+              <select id="chartMetric">
+                ${Object.entries(CHART_METRICS)
+                  .map(
+                    ([key, option]) =>
+                      `<option value="${key}">${option.label}</option>`
+                  )
+                  .join("")}
+              </select>
+            </label>
             <section class="metric-card">
               <div class="metric-card-head">
                 <span id="chartMetricLabel">Structure score</span>
@@ -81,7 +81,7 @@ export function renderAppShell(
               </div>
               <strong id="chartMetricValue">0.000</strong>
               <div class="metric-exposition" aria-live="polite">
-                <div id="chartEquation" aria-label="${CHART_METRICS.structureScore.equation}">${renderChartMetricEquation("structureScore")}</div>
+                <div id="chartEquation" aria-label="${escapeAttribute(CHART_METRICS.structureScore.equation)}">${escapeText(renderChartMetricEquation("structureScore"))}</div>
                 <p id="chartCommentary">${CHART_METRICS.structureScore.commentary}</p>
               </div>
               <canvas id="metricChart" width="920" height="220" aria-label="Selected emergence metric over time"></canvas>
@@ -90,8 +90,8 @@ export function renderAppShell(
         </section>
 
         <div class="analysis-layout">
-          <section class="programs-section collapsible-section" aria-label="Top programs" data-collapsible-section="programs">
-            ${sectionHead("Top Programs", "Most common 64-byte tapes in the latest metric sample.")}
+          <section class="programs-section collapsible-section collapsed" aria-label="Repeated programs" data-collapsible-section="programs">
+            ${sectionHead("Repeated Programs", "64-byte tapes that occupy more than one cell.", true)}
             <div class="section-body program-browser" data-collapse-body>
               <div id="programList" class="program-list"></div>
               <div class="program-detail">
@@ -138,8 +138,8 @@ export function renderAppShell(
           </section>
         </div>
 
-        <section class="metrics-section collapsible-section" aria-label="Run diagnostics" data-collapsible-section="diagnostics">
-          ${sectionHead("Run Diagnostics", "Throughput and execution health for the current browser run.")}
+        <section class="metrics-section collapsible-section collapsed" aria-label="Run diagnostics" data-collapsible-section="diagnostics">
+          ${sectionHead("Diagnostics", "Throughput and execution health.", true)}
           <dl class="section-body metrics" data-collapse-body>
             ${metricMarkup("Epochs per second", "epochsPerSecond", "Current simulation throughput from the worker.")}
             ${metricMarkup("Render frames per second", "renderFps", "How often the current soup image is redrawn.")}
@@ -151,8 +151,8 @@ export function renderAppShell(
       </section>
 
       <div class="docs-layout">
-        <section class="explanation collapsible-section" data-collapsible-section="explanation">
-          ${sectionHead("How The Simulation Works", "The core state, interaction rule, and sources of change.")}
+        <section class="explanation collapsible-section collapsed" data-collapsible-section="explanation">
+          ${sectionHead("How It Works", "State, interaction rule, and sources of change.", true)}
           <div class="section-body explainer-grid" data-collapse-body>
             <p><strong>State.</strong> The world is a fixed 240 by 135 grid. Each cell stores one 64-byte BFF tape. There are no separate organisms, resources, fitness scores, births, or deaths.</p>
             <p><strong>Language.</strong> BFF is a self-modifying extension of <a href="https://www.brainfuck.org/brainfuck.html" target="_blank" rel="noreferrer">Brainfuck</a>: the tape is both program and memory. Ten byte values execute as instructions: <code>[ ] + - . , &lt; &gt; { }</code>. Byte <code>0</code> is null and controls loops. Every other byte is inert data unless execution changes it.</p>
@@ -165,8 +165,8 @@ export function renderAppShell(
           </div>
         </section>
 
-        <footer class="resources collapsible-section" data-collapsible-section="resources">
-          ${sectionHead("Further Reading", "Original sources and a reference emergence run.")}
+        <footer class="resources collapsible-section collapsed" data-collapsible-section="resources">
+          ${sectionHead("Sources", "Original sources and a reference emergence run.", true)}
           <div class="section-body resources-body" data-collapse-body>
             <div>
             <p>
@@ -290,5 +290,16 @@ function info(text: string): string {
 }
 
 function escapeAttribute(text: string): string {
-  return text.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function escapeText(text: string): string {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }

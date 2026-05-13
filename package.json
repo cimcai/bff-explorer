@@ -19,9 +19,5 @@
     "typescript": "^5.9.3",
     "vite": "^7.2.7",
     "vitest": "^4.0.16"
-  },
-  "dependencies": {
-    "@fix-webm-duration/fix": "^1.0.1",
-    "katex": "^0.16.45"
   }
 }

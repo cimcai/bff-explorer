@@ -1,13 +1,34 @@
-This is an interactive tool for studying 2D BFF from https://arxiv.org/abs/2406.19108
+# BFF Explorer
 
-The goal is to have an efficient implementation that can be played with to better understand the conditions and properties of replicator emergence.
+An interactive browser tool for studying 2D BFF artificial-life dynamics from
+https://arxiv.org/abs/2406.19108.
 
-Highlighted features:
+The app is intentionally canvas-first: start or pause the soup, scrub saved
+checkpoints, inject a known BFF replicator, and open details only when needed.
 
-- Performance-optimized implementation of the paper's 2D BFF: ~58 epochs/sec
-- Auto-detect emergence of replicators and save a video when it happens.
-- Randomly inject known replicators from a preset library
-- Plot key metrics to study phase transitions around replicator emergence
-- Track most frequent current programs and compute their BFF pair interaction
+## Features
 
-Original 2D BFF emergence video: https://www.youtube.com/watch?v=07NoZwvgJ_M&t=108s
+- Fast TypeScript implementation of the paper-style 2D BFF substrate.
+- Web Worker simulation with OffscreenCanvas rendering when available.
+- Checkpoint scrubbing with deterministic branch/resume behavior.
+- Known replicator presets for quick demonstrations of spread.
+- Minimal repeated-program browser and pair interaction lab.
+- Emergence metrics for structure, phase shift, dominant program share,
+  executable byte fraction, and unique program fraction.
+
+## Development
+
+```sh
+npm install
+npm test
+npm run build
+npm run dev
+```
+
+For browser-level verification:
+
+```sh
+BFF_EXPLORER_URL=http://127.0.0.1:5173/bff/ npm run test:browser
+```
+
+The production app is served from `/bff/`.

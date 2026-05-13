@@ -29,6 +29,9 @@ await mobilePage.goto(url, { waitUntil: "networkidle" });
 const mobileLayout = await inspectResponsiveLayout(mobilePage);
 await mobilePage.close();
 
+const initiallyCollapsedSections = await page.locator(".collapsible-section.collapsed").count();
+await page.locator('[data-collapsible-section="parameters"] [data-collapse-toggle]').click();
+await page.locator(".advanced-controls summary").click();
 await page.locator("#mutationRate").fill("0.002");
 await page.locator("#resetDefaults").click();
 const resetMutationValue = await page.locator("#mutationRate").inputValue();
@@ -40,6 +43,8 @@ await page.waitForFunction(() =>
   document.querySelector("#injectorStatus")?.textContent?.includes("Inserted 3")
 );
 const injectorStatus = await page.locator("#injectorStatus").textContent();
+const repeatedRowsAfterInjection = await page.locator(".program-row").count();
+const repeatedDetailAfterInjection = await page.locator("#programDetailStats").textContent();
 await page.locator("#loadReplicatorToLab").click();
 const loadedReplicatorA = await page.locator("#interactionCellA").inputValue();
 const collapseToggleCount = await page.locator("[data-collapse-toggle]").count();
@@ -111,10 +116,10 @@ const fullscreenState = await page.evaluate(() => ({
 await page.locator("#fullscreen").click();
 await page.waitForTimeout(150);
 
+await page.locator('[data-collapsible-section="emergence"] [data-collapse-toggle]').click();
 await page.locator("#chartMetric").selectOption("dominantProgramFraction");
 const selectedMetric = await page.locator("#chartMetricLabel").textContent();
 const chartEquation = await page.locator("#chartEquation").getAttribute("aria-label");
-const chartEquationKatex = await page.locator("#chartEquation .katex").count();
 const chartCommentary = await page.locator("#chartCommentary").textContent();
 const chartOptionCount = await page.locator("#chartMetric option").count();
 const seedVisible = await page.locator("#seed").count();
@@ -175,7 +180,6 @@ const result = {
   fullscreenState,
   selectedMetric,
   chartEquation,
-  chartEquationKatex,
   chartCommentary,
   chartOptionCount,
   seedVisible,
@@ -189,9 +193,12 @@ const result = {
   latestCheckpointLabel,
   latestEpochLabel,
   resetMutationValue,
+  initiallyCollapsedSections,
   replicatorPresetOptions,
   initialReplicatorCode,
   injectorStatus,
+  repeatedRowsAfterInjection,
+  repeatedDetailAfterInjection,
   loadedReplicatorA,
   collapseToggleCount,
   interactionInitiallyCollapsed,
@@ -247,9 +254,9 @@ if (
   fullscreenState.button !== "Exit fullscreen" ||
   selectedMetric !== "Dominant program" ||
   !chartEquation?.includes("number_of_cells_with_the_most_common_program") ||
-  chartEquationKatex < 1 ||
   !chartCommentary?.includes("Each cell contains one 64-byte program") ||
   chartOptionCount !== 5 ||
+  initiallyCollapsedSections !== 7 ||
   seedVisible !== 0 ||
   checksumVisible !== 0 ||
   redundantMetricCount !== 0 ||
@@ -258,6 +265,8 @@ if (
   replicatorPresetOptions < 3 ||
   !initialReplicatorCode?.includes("[[{.>]-]") ||
   !injectorStatus?.includes("Inserted 3") ||
+  repeatedRowsAfterInjection < 1 ||
+  !repeatedDetailAfterInjection?.includes("3 cells") ||
   !loadedReplicatorA?.includes("[[{.>]-]") ||
   collapseToggleCount !== 7 ||
   !interactionInitiallyCollapsed ||
@@ -272,8 +281,8 @@ if (
   defaultButtonCount !== 0 ||
   iconTooltipCount < 5 ||
   tooltipChecks.some((check) => !check.visible || !check.inViewport) ||
-  programRows < 10 ||
-  !programDetail?.includes("cells") ||
+  programRows !== 0 ||
+  !programDetail?.includes("Repeated 64-byte tapes") ||
   resourceLinks < 3 ||
   playLabelBeforeScrub !== "Pause simulation" ||
   playLabelAfterScrub !== "Pause simulation" ||
