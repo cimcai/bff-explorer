@@ -507,6 +507,54 @@ label {
   margin-top: 10px;
 }
 
+.movie-capture-controls {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--hairline);
+  padding-top: 10px;
+}
+
+.movie-capture-toggle {
+  display: flex;
+  grid-column: 1;
+  align-items: center;
+  gap: 8px;
+}
+
+.movie-capture-toggle input {
+  width: auto;
+}
+
+.movie-capture-status {
+  min-height: 20px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.movie-capture-status.active {
+  color: var(--accent-strong);
+}
+
+.movie-capture-status.triggered,
+.movie-capture-status.saving {
+  color: #73500f;
+}
+
+.movie-capture-status.error {
+  color: var(--danger);
+}
+
+.movie-capture-canvas {
+  position: fixed;
+  left: -2px;
+  top: -2px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .label-row,
 dt {
   display: inline-flex;

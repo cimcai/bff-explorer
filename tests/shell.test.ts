@@ -24,6 +24,10 @@ describe("app shell markup", () => {
     expect(html).toContain('id="loadReplicatorToLab"');
     expect(html).toContain('id="resetDefaults"');
     expect(html).toContain("<summary>Advanced parameters</summary>");
+    expect(html).toContain("<summary>Replication movie capture</summary>");
+    expect(html).toContain('id="autoMovieCapture"');
+    expect(html).toContain('id="movieCaptureStatus"');
+    expect(html).toContain('id="movieCaptureCanvas"');
     expect(html).not.toContain(">Default</button>");
   });
 

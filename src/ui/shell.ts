@@ -45,6 +45,7 @@ export function renderAppShell(
                   <div class="control-actions">
                     <button id="resetDefaults" type="button" title="Restore all parameter controls to their default values.">Reset to defaults</button>
                   </div>
+                  ${movieCaptureMarkup()}
                 </div>
               </details>
             </div>
@@ -249,6 +250,21 @@ function controlMarkup(
       <span class="label-row">${label} ${info(`${tooltip} Default: ${defaults[id]}.`)}</span>
       <input id="${id}" type="number" min="0" step="any" value="${value}" title="Default: ${defaults[id]}" />
     </label>
+  `;
+}
+
+function movieCaptureMarkup(): string {
+  return `
+    <details class="movie-capture-controls">
+      <summary>Replication movie capture</summary>
+      <label class="movie-capture-toggle">
+        <input id="autoMovieCapture" type="checkbox" />
+        <span>Auto-save replication movie</span>
+      </label>
+      <p id="movieCaptureStatus" class="movie-capture-status" aria-live="polite">Movie capture off.</p>
+      <button id="shareMovieCapture" type="button" hidden>Share last movie</button>
+      <canvas id="movieCaptureCanvas" class="movie-capture-canvas" width="1440" height="810" aria-hidden="true"></canvas>
+    </details>
   `;
 }
 

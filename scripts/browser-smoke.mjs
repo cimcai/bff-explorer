@@ -31,7 +31,25 @@ await mobilePage.close();
 
 const initiallyCollapsedSections = await page.locator(".collapsible-section.collapsed").count();
 await page.locator('[data-collapsible-section="parameters"] [data-collapse-toggle]').click();
-await page.locator(".advanced-controls summary").click();
+await page.locator(".advanced-controls > summary").click();
+const movieCaptureToggleCount = await page.locator("#autoMovieCapture").count();
+const movieCaptureDefaultChecked = await page.locator("#autoMovieCapture").isChecked();
+await page.locator(".movie-capture-controls > summary").click();
+const movieCaptureInitialStatus = await page.locator("#movieCaptureStatus").textContent();
+const movieCaptureDisabled = await page.locator("#autoMovieCapture").isDisabled();
+let movieCaptureStartedStatus = movieCaptureInitialStatus;
+if (!movieCaptureDisabled) {
+  await page.locator("#autoMovieCapture").check();
+  await page.waitForFunction(() =>
+    document.querySelector("#movieCaptureStatus")?.textContent?.includes("Watching")
+  );
+  movieCaptureStartedStatus = await page.locator("#movieCaptureStatus").textContent();
+  await page.locator("#autoMovieCapture").uncheck();
+}
+const movieCaptureCanvasSize = await page.locator("#movieCaptureCanvas").evaluate((canvas) => ({
+  width: canvas.width,
+  height: canvas.height
+}));
 await page.locator("#mutationRate").fill("0.002");
 await page.locator("#resetDefaults").click();
 const resetMutationValue = await page.locator("#mutationRate").inputValue();
@@ -206,6 +224,12 @@ const result = {
   latestEpochLabel,
   resetMutationValue,
   initiallyCollapsedSections,
+  movieCaptureToggleCount,
+  movieCaptureDefaultChecked,
+  movieCaptureInitialStatus,
+  movieCaptureDisabled,
+  movieCaptureStartedStatus,
+  movieCaptureCanvasSize,
   replicatorPresetOptions,
   initialReplicatorCode,
   injectorStatus,
@@ -277,6 +301,12 @@ if (
   redundantMetricCount !== 0 ||
   checkpointLatestCount !== 1 ||
   resetMutationValue !== "0.0001220703125" ||
+  movieCaptureToggleCount !== 1 ||
+  movieCaptureDefaultChecked ||
+  !movieCaptureInitialStatus?.includes("off") ||
+  (!movieCaptureDisabled && !movieCaptureStartedStatus?.includes("Watching")) ||
+  movieCaptureCanvasSize.width !== 1440 ||
+  movieCaptureCanvasSize.height !== 810 ||
   replicatorPresetOptions < 3 ||
   !initialReplicatorCode?.includes("[[{.>]-]") ||
   !injectorStatus?.includes("Inserted 3") ||

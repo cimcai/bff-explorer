@@ -13,6 +13,7 @@ import { createCheckpointController } from "./ui/checkpointController";
 import { mustGet, setText } from "./ui/dom";
 import { createInteractionLab } from "./ui/interactionLab";
 import { createMetricPanel } from "./ui/metricPanel";
+import { createMovieCaptureController } from "./ui/movieCapture/movieCaptureController";
 import { createProgramBrowser } from "./ui/programBrowser";
 import { createReplicatorControls } from "./ui/replicatorControls";
 import { createRuntimeControls } from "./ui/runtimeControls";
@@ -40,6 +41,14 @@ const checkpointIntervalInput = mustGet<HTMLInputElement>("checkpointInterval");
 const metricIntervalInput = mustGet<HTMLInputElement>("metricInterval");
 const timeBudgetInput = mustGet<HTMLInputElement>("timeBudgetMs");
 const resetDefaultsButton = mustGet<HTMLButtonElement>("resetDefaults");
+const autoMovieCaptureInput =
+  mustGet<HTMLInputElement>("autoMovieCapture");
+const movieCaptureStatus =
+  mustGet<HTMLParagraphElement>("movieCaptureStatus");
+const shareMovieCaptureButton =
+  mustGet<HTMLButtonElement>("shareMovieCapture");
+const movieCaptureCanvas =
+  mustGet<HTMLCanvasElement>("movieCaptureCanvas");
 const replicatorPresetSelect = mustGet<HTMLSelectElement>("replicatorPreset");
 const replicatorCountInput = mustGet<HTMLInputElement>("replicatorCount");
 const replicatorPreviewCanvas =
@@ -179,6 +188,16 @@ const runtimeControls = createRuntimeControls({
   onDefaultsReset: () => replicatorControls.resetToDefault()
 });
 
+const movieCaptureController = createMovieCaptureController({
+  refs: {
+    sourceCanvas: canvas,
+    captureCanvas: movieCaptureCanvas,
+    enabledInput: autoMovieCaptureInput,
+    status: movieCaptureStatus,
+    shareButton: shareMovieCaptureButton
+  }
+});
+
 const checkpointController = createCheckpointController({
   checkpointScrubber,
   checkpointLabel,
@@ -202,6 +221,9 @@ worker.onmessage = (event: MessageEvent<WorkerOutMessage>) => {
       updateStatus(message.status);
     }
   } else if (message.type === "injectionComplete") {
+    if (!message.error) {
+      movieCaptureController.noteInjection(message.insertedCount);
+    }
     updateStatus(message.status);
     replicatorControls.updateInjectionStatus(message);
   } else if (message.type === "frame") {
@@ -228,13 +250,19 @@ playPauseButton.addEventListener("click", () => {
 
 resetButton.addEventListener("click", () => {
   viewportController.resetFit();
+  movieCaptureController.resetRun();
   post({ type: "reset", config: runtimeControls.readConfig() });
 });
 
 newRunButton.addEventListener("click", () => {
   runtimeControls.randomizeSeed();
   viewportController.resetFit();
+  movieCaptureController.resetRun();
   post({ type: "reset", config: runtimeControls.readConfig() });
+});
+
+window.addEventListener("pagehide", () => {
+  movieCaptureController.stop();
 });
 
 function updateStatus(status: SimulationStatus): void {
@@ -246,6 +274,7 @@ function updateStatus(status: SimulationStatus): void {
   programBrowser.update(status.topPrograms);
   checkpointController.update(status);
   replicatorControls.updateStatus(status);
+  movieCaptureController.update(status);
 }
 
 function updateStatsReadout(status: SimulationStatus): void {
