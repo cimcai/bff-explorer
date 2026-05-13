@@ -66,6 +66,7 @@ const repeatedDetailAfterInjection = await page.locator("#programDetailStats").t
 await page.locator("#loadReplicatorToLab").click();
 const loadedReplicatorA = await page.locator("#interactionCellA").inputValue();
 const collapseToggleCount = await page.locator("[data-collapse-toggle]").count();
+const collapseButtonCount = await page.locator("button[data-collapse-toggle]").count();
 const interactionInitiallyCollapsed = await isSectionCollapsed(page, "interaction");
 const replicatorExpanded = !(await isSectionCollapsed(page, "replicator"));
 const movieCaptureExpanded = !(await isSectionCollapsed(page, "movie-capture"));
@@ -245,6 +246,7 @@ const result = {
   repeatedDetailAfterInjection,
   loadedReplicatorA,
   collapseToggleCount,
+  collapseButtonCount,
   interactionInitiallyCollapsed,
   interactionExpanded,
   replicatorExpanded,
@@ -333,6 +335,7 @@ if (
   !repeatedDetailAfterInjection?.includes("3 cells") ||
   !loadedReplicatorA?.includes("[[{.>]-]") ||
   collapseToggleCount !== 9 ||
+  collapseButtonCount !== 0 ||
   !interactionInitiallyCollapsed ||
   !interactionExpanded ||
   !replicatorExpanded ||

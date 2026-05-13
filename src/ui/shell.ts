@@ -59,15 +59,7 @@ export function renderAppShell(
         </div>
 
         <section class="chart-section collapsible-section collapsed" aria-label="Emergence metric chart" data-collapsible-section="emergence">
-          <div class="chart-head">
-            <div>
-              <h2>Emergence Signal</h2>
-              <p id="chartDescription">${CHART_METRICS.structureScore.description}</p>
-            </div>
-            <div class="section-actions">
-              ${collapseButton(true)}
-            </div>
-          </div>
+          ${sectionHead("Emergence Signal", CHART_METRICS.structureScore.description, true, "chartDescription")}
 
           <div class="section-body" data-collapse-body>
             <label class="metric-select-label">
@@ -224,20 +216,22 @@ function replicatorInjectionMarkup(config: SimulationConfig): string {
   `;
 }
 
-function sectionHead(title: string, subtitle: string, collapsed = false): string {
+function sectionHead(
+  title: string,
+  subtitle: string,
+  collapsed = false,
+  subtitleId?: string
+): string {
+  const subtitleAttribute = subtitleId ? ` id="${subtitleId}"` : "";
   return `
-    <div class="section-head">
+    <div class="section-head section-toggle" role="button" tabindex="0" data-collapse-toggle aria-expanded="${collapsed ? "false" : "true"}">
       <div>
         <h2>${title}</h2>
-        <p>${subtitle}</p>
+        <p${subtitleAttribute}>${subtitle}</p>
       </div>
-      ${collapseButton(collapsed)}
+      <span class="section-chevron" aria-hidden="true"></span>
     </div>
   `;
-}
-
-function collapseButton(collapsed = false): string {
-  return `<button class="collapse-toggle" type="button" data-collapse-toggle aria-expanded="${collapsed ? "false" : "true"}">${collapsed ? "Show" : "Hide"}</button>`;
 }
 
 function controlMarkup(

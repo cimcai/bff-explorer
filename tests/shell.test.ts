@@ -31,6 +31,9 @@ describe("app shell markup", () => {
     expect(html).not.toContain('id="newRun"');
     expect(html).not.toContain("<summary>Advanced parameters</summary>");
     expect(html).not.toContain("Replication movie capture</summary>");
+    expect(html).not.toContain(">Show</button>");
+    expect(html).not.toContain(">Hide</button>");
+    expect(html).not.toContain('button class="collapse-toggle"');
     expect(html).toContain('id="autoMovieCapture"');
     expect(html).toContain('id="movieCaptureStatus"');
     expect(html).toContain('id="movieCaptureCanvas"');
@@ -89,6 +92,7 @@ describe("app shell markup", () => {
     const html = renderAppShell(defaultConfig(), defaultConfig());
 
     expect(html.match(/data-collapse-toggle/g)).toHaveLength(9);
+    expect(html.match(/role="button"/g)).toHaveLength(9);
     expect(html).toContain('data-collapsible-section="parameters"');
     expect(html).toContain('data-collapsible-section="replicator"');
     expect(html).toContain('data-collapsible-section="movie-capture"');
@@ -98,7 +102,7 @@ describe("app shell markup", () => {
     expect(html).toContain(
       'class="interaction-section collapsible-section collapsed"'
     );
-    expect(html.match(/aria-expanded="false">Show<\/button>/g)).toHaveLength(9);
+    expect(html.match(/aria-expanded="false"/g)).toHaveLength(9);
     expect(html).toContain('data-collapsible-section="diagnostics"');
     expect(html).toContain('data-collapsible-section="explanation"');
     expect(html).toContain('data-collapsible-section="resources"');

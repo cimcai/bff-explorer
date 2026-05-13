@@ -1,18 +1,24 @@
 export function bindCollapsibleSections(root: ParentNode = document): void {
   root
-    .querySelectorAll<HTMLButtonElement>("[data-collapse-toggle]")
-    .forEach((button) => {
-      button.addEventListener("click", () => toggleSection(button));
+    .querySelectorAll<HTMLElement>("[data-collapse-toggle]")
+    .forEach((toggle) => {
+      toggle.addEventListener("click", () => toggleSection(toggle));
+      toggle.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+        event.preventDefault();
+        toggleSection(toggle);
+      });
     });
 }
 
-function toggleSection(button: HTMLButtonElement): void {
-  const section = button.closest<HTMLElement>("[data-collapsible-section]");
+function toggleSection(toggle: HTMLElement): void {
+  const section = toggle.closest<HTMLElement>("[data-collapsible-section]");
   if (!section) {
     return;
   }
   const collapsed = section.classList.toggle("collapsed");
   const expanded = !collapsed;
-  button.textContent = expanded ? "Hide" : "Show";
-  button.setAttribute("aria-expanded", String(expanded));
+  toggle.setAttribute("aria-expanded", String(expanded));
 }
