@@ -282,7 +282,8 @@ if (
   !desktopLayout.parametersBelowDocs ||
   !desktopLayout.replicatorBelowParameters ||
   !desktopLayout.movieCaptureBelowReplicator ||
-  !desktopLayout.analysisSideBySide ||
+  desktopLayout.analysisSideBySide ||
+  !desktopLayout.analysisStacked ||
   !desktopLayout.collapseButtonsContained ||
   !desktopLayout.noHorizontalOverflow ||
   !midLayout.docsBelowCanvas ||
@@ -290,6 +291,7 @@ if (
   !midLayout.parametersBelowDocs ||
   !midLayout.replicatorBelowParameters ||
   !midLayout.movieCaptureBelowReplicator ||
+  midLayout.analysisSideBySide ||
   !midLayout.analysisStacked ||
   !midLayout.collapseButtonsContained ||
   !midLayout.noHorizontalOverflow ||
@@ -298,6 +300,7 @@ if (
   !mobileLayout.parametersBelowDocs ||
   !mobileLayout.replicatorBelowParameters ||
   !mobileLayout.movieCaptureBelowReplicator ||
+  mobileLayout.analysisSideBySide ||
   !mobileLayout.analysisStacked ||
   !mobileLayout.checkpointButtonSameTopRow ||
   !mobileLayout.collapseButtonsContained ||

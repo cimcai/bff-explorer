@@ -138,5 +138,8 @@ describe("app shell markup", () => {
     expect(html.indexOf('data-collapsible-section="movie-capture"')).toBeLessThan(
       html.indexOf('data-collapsible-section="emergence"')
     );
+    expect(html.indexOf('data-collapsible-section="programs"')).toBeLessThan(
+      html.indexOf('data-collapsible-section="interaction"')
+    );
   });
 });

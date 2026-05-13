@@ -939,14 +939,6 @@ code {
   }
 }
 
-@media (min-width: 1400px) {
-  .analysis-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-  }
-
-}
-
 @media (max-width: 1399px) {
   .panel-grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));

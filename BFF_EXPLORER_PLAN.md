@@ -16,6 +16,8 @@ changes that preserve the simulator's substrate fidelity.
   advanced subgroup.
 - Docs combines the model rules, replication meaning, practical timing note,
   and source links in one collapsed section directly below the canvas.
+- Repeated Programs and Pair Interaction Lab stay in a single vertical flow,
+  even on wide screens.
 - The program browser intentionally hides singleton programs. Random soup
   produces thousands of one-off tapes; showing them is UI noise.
 - Movie capture is a secondary top-level workflow, not part of the default
