@@ -79,7 +79,8 @@ describe("metric chart definitions", () => {
     drawMetricChart(canvas, [], "structureScore");
 
     expect(labels).toContain("Structure score");
-    expect(labels).toContain("14.2");
+    expect(labels).toContain("1.00");
+    expect(labels).toContain("0.50");
     expect(labels).toContain("0.00");
     expect(labels).toContain("Epoch");
     expect(labels).not.toContain("Waiting for metric samples");
@@ -93,7 +94,7 @@ describe("metric chart definitions", () => {
     expect(CHART_METRICS.uniqueProgramFraction.yDomain).toEqual([0, 1]);
   });
 
-  it("draws fixed full-range y-axis labels instead of sample ranges", () => {
+  it("auto-scales low structure scores instead of flattening them against the theoretical maximum", () => {
     const labels: string[] = [];
     const canvas = mockCanvas(labels);
 
@@ -106,12 +107,13 @@ describe("metric chart definitions", () => {
       "structureScore"
     );
 
-    expect(labels).toContain("14.2");
+    expect(labels).toContain("0.05");
+    expect(labels).toContain("0.03");
     expect(labels).toContain("0.00");
-    expect(labels).not.toContain("0.02");
+    expect(labels).not.toContain("14.2");
   });
 
-  it("always labels fraction metric axes as 0% to 100%", () => {
+  it("auto-scales small fraction metrics while keeping zero visible", () => {
     const labels: string[] = [];
     const canvas = mockCanvas(labels);
 
@@ -124,10 +126,27 @@ describe("metric chart definitions", () => {
       "dominantProgramFraction"
     );
 
-    expect(labels).toContain("100%");
+    expect(labels).toContain("5%");
+    expect(labels).toContain("2.5%");
     expect(labels).toContain("0%");
-    expect(labels).not.toContain("2%");
-    expect(labels).not.toContain("3%");
+    expect(labels).not.toContain("100%");
+  });
+
+  it("resizes the backing bitmap to avoid stretching a low-resolution chart", () => {
+    const labels: string[] = [];
+    const canvas = mockCanvas(labels, [], { width: 1840, height: 260 });
+
+    drawMetricChart(
+      canvas,
+      [
+        { ...metric, epoch: 0, structureScore: 0.1 },
+        { ...metric, epoch: 10, structureScore: 0.2 }
+      ],
+      "structureScore"
+    );
+
+    expect(canvas.width).toBe(1840);
+    expect(canvas.height).toBe(260);
   });
 
   it("does not draw vertical phase-transition markers", () => {
@@ -149,7 +168,8 @@ describe("metric chart definitions", () => {
 
 function mockCanvas(
   labels: string[],
-  fillRects: Array<{ x: number; y: number; width: number; height: number }> = []
+  fillRects: Array<{ x: number; y: number; width: number; height: number }> = [],
+  rect?: { width: number; height: number }
 ): HTMLCanvasElement {
   const context = {
     fillStyle: "",
@@ -173,9 +193,28 @@ function mockCanvas(
     }
   } as unknown as CanvasRenderingContext2D;
 
-  return {
+  const canvas = {
     width: 920,
     height: 220,
     getContext: () => context
-  } as unknown as HTMLCanvasElement;
+  } as unknown as HTMLCanvasElement & {
+    getBoundingClientRect?: () => DOMRect;
+  };
+
+  if (rect) {
+    canvas.getBoundingClientRect = () =>
+      ({
+        x: 0,
+        y: 0,
+        top: 0,
+        right: rect.width,
+        bottom: rect.height,
+        left: 0,
+        width: rect.width,
+        height: rect.height,
+        toJSON: () => ({})
+      }) as DOMRect;
+  }
+
+  return canvas as HTMLCanvasElement;
 }

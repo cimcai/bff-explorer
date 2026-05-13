@@ -638,6 +638,7 @@ dt {
 }
 
 #metricChart {
+  display: block;
   width: 100%;
   height: 220px;
   border: 1px solid var(--hairline);

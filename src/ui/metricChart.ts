@@ -104,13 +104,17 @@ export function drawMetricChart(
   history: readonly MetricSnapshot[],
   metricKey: ChartMetricKey
 ): void {
+  const size = prepareChartCanvas(canvas);
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     return;
   }
+  if ("setTransform" in ctx) {
+    ctx.setTransform(size.pixelRatio, 0, 0, size.pixelRatio, 0, 0);
+  }
 
-  const width = canvas.width;
-  const height = canvas.height;
+  const width = size.width;
+  const height = size.height;
   const plot = {
     left: 58,
     right: width - 14,
@@ -123,7 +127,7 @@ export function drawMetricChart(
   ctx.fillStyle = "#fbfcfa";
   ctx.fillRect(0, 0, width, height);
 
-  const domain = metricDomain(metricKey);
+  const domain = metricDomain(metricKey, history);
   drawChartFrame(ctx, plot, metricKey, history, domain);
 
   if (history.length === 0) {
@@ -140,7 +144,9 @@ export function drawMetricChart(
   }
 
   ctx.strokeStyle = "#256c73";
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.25;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
   ctx.beginPath();
   history.forEach((sample, index) => {
     const x = plot.left + (index / (history.length - 1)) * plotWidth;
@@ -161,6 +167,46 @@ interface ChartPlotArea {
   bottom: number;
 }
 
+interface PreparedCanvasSize {
+  width: number;
+  height: number;
+  pixelRatio: number;
+}
+
+function prepareChartCanvas(canvas: HTMLCanvasElement): PreparedCanvasSize {
+  const fallbackWidth = Math.max(1, canvas.width);
+  const fallbackHeight = Math.max(1, canvas.height);
+  const rect =
+    typeof canvas.getBoundingClientRect === "function"
+      ? canvas.getBoundingClientRect()
+      : null;
+  const cssWidth = Math.max(
+    1,
+    Math.round(rect && rect.width > 0 ? rect.width : fallbackWidth)
+  );
+  const cssHeight = Math.max(
+    1,
+    Math.round(rect && rect.height > 0 ? rect.height : fallbackHeight)
+  );
+  const pixelRatio =
+    typeof window === "undefined"
+      ? 1
+      : Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+  const backingWidth = Math.round(cssWidth * pixelRatio);
+  const backingHeight = Math.round(cssHeight * pixelRatio);
+
+  if (canvas.width !== backingWidth || canvas.height !== backingHeight) {
+    canvas.width = backingWidth;
+    canvas.height = backingHeight;
+  }
+
+  return {
+    width: cssWidth,
+    height: cssHeight,
+    pixelRatio
+  };
+}
+
 function drawChartFrame(
   ctx: CanvasRenderingContext2D,
   plot: ChartPlotArea,
@@ -173,7 +219,8 @@ function drawChartFrame(
   ctx.strokeStyle = "#e1e8e4";
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i += 1) {
-    const y = plot.top + (i / 4) * plotHeight;
+    const tickValue = domain.max - (i / 4) * (domain.max - domain.min);
+    const y = metricY(tickValue, domain, plot, plotHeight);
     ctx.beginPath();
     ctx.moveTo(plot.left, y + 0.5);
     ctx.lineTo(plot.right, y + 0.5);
@@ -186,16 +233,19 @@ function drawChartFrame(
   ctx.stroke();
 
   ctx.fillStyle = "#74817b";
-  ctx.font = "11px system-ui, sans-serif";
+  ctx.font = "12px system-ui, sans-serif";
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
-  ctx.fillText(CHART_METRICS[metricKey].label, plot.left, 12);
+  ctx.fillText(CHART_METRICS[metricKey].label, plot.left, 13);
   ctx.textAlign = "center";
   ctx.fillText("Epoch", plot.left + plotWidth / 2, plot.bottom + 24);
 
   ctx.textAlign = "right";
-  ctx.fillText(axisValue(domain.max, metricKey), plot.left - 8, plot.top);
-  ctx.fillText(axisValue(domain.min, metricKey), plot.left - 8, plot.bottom);
+  for (let i = 0; i <= 4; i += 2) {
+    const tickValue = domain.max - (i / 4) * (domain.max - domain.min);
+    const y = metricY(tickValue, domain, plot, plotHeight);
+    ctx.fillText(axisValue(tickValue, metricKey), plot.left - 8, y);
+  }
 
   if (history.length === 0) {
     return;
@@ -215,12 +265,86 @@ interface MetricDomain {
   max: number;
 }
 
-function metricDomain(metricKey: ChartMetricKey): MetricDomain {
-  const fixedDomain = CHART_METRICS[metricKey].yDomain;
+function metricDomain(
+  metricKey: ChartMetricKey,
+  history: readonly MetricSnapshot[]
+): MetricDomain {
+  const values = history
+    .map((sample) => sample[metricKey])
+    .filter((value) => Number.isFinite(value));
+
+  if (values.length === 0) {
+    return fallbackDomain(metricKey);
+  }
+
+  if (metricKey === "phaseTransitionScore") {
+    const maxAbs = Math.max(...values.map((value) => Math.abs(value)), 0.05);
+    const bound = niceCeil(maxAbs * 1.18);
+    return {
+      min: -bound,
+      max: bound
+    };
+  }
+
+  if (metricKey === "uniqueProgramFraction") {
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const range = Math.max(maxValue - minValue, 0.01);
+    return {
+      min: Math.max(0, Math.floor((minValue - range * 0.3) * 100) / 100),
+      max: 1
+    };
+  }
+
+  const maxValue = Math.max(...values, 0);
+  const minimumUpper =
+    metricKey === "structureScore"
+      ? 0.05
+      : metricKey === "activeInstructionFraction"
+        ? 0.05
+        : 0.01;
+  const upper = niceCeil(Math.max(maxValue * 1.18, minimumUpper));
+  const fixedMax = CHART_METRICS[metricKey].yDomain[1];
   return {
-    min: fixedDomain[0],
-    max: fixedDomain[1]
+    min: 0,
+    max: Math.min(fixedMax, upper)
   };
+}
+
+function fallbackDomain(metricKey: ChartMetricKey): MetricDomain {
+  if (metricKey === "phaseTransitionScore") {
+    return {
+      min: -0.1,
+      max: 0.1
+    };
+  }
+  if (metricKey === "structureScore") {
+    return {
+      min: 0,
+      max: 1
+    };
+  }
+  return {
+    min: CHART_METRICS[metricKey].yDomain[0],
+    max: CHART_METRICS[metricKey].yDomain[1]
+  };
+}
+
+function niceCeil(value: number): number {
+  if (value <= 0) {
+    return 1;
+  }
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const normalized = value / magnitude;
+  const nice =
+    normalized <= 1
+      ? 1
+      : normalized <= 2
+        ? 2
+        : normalized <= 5
+          ? 5
+          : 10;
+  return nice * magnitude;
 }
 
 function metricY(
@@ -240,9 +364,21 @@ function axisValue(value: number, metricKey: ChartMetricKey): string {
     metricKey === "activeInstructionFraction" ||
     metricKey === "uniqueProgramFraction"
   ) {
-    return `${Math.round(value * 100)}%`;
+    const percent = value * 100;
+    const rounded = Math.round(percent);
+    if (Math.abs(percent - rounded) < 0.05) {
+      return `${rounded}%`;
+    }
+    return `${percent < 10 && percent > 0 ? percent.toFixed(1) : rounded}%`;
   }
-  return value.toFixed(Math.abs(value) < 10 ? 2 : 1);
+  const abs = Math.abs(value);
+  if (abs === 0) {
+    return "0.00";
+  }
+  if (abs < 0.01) {
+    return value.toFixed(3);
+  }
+  return value.toFixed(abs < 10 ? 2 : 1);
 }
 
 function clamp(value: number, min: number, max: number): number {

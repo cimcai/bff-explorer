@@ -122,6 +122,15 @@ const selectedMetric = await page.locator("#chartMetricLabel").textContent();
 const chartEquation = await page.locator("#chartEquation").getAttribute("aria-label");
 const chartCommentary = await page.locator("#chartCommentary").textContent();
 const chartEquationRendered = await page.locator("#chartEquation .katex").count();
+const metricChartSize = await page.locator("#metricChart").evaluate((canvas) => {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    cssWidth: rect.width,
+    cssHeight: rect.height,
+    backingWidth: canvas.width,
+    backingHeight: canvas.height
+  };
+});
 const chartOptionCount = await page.locator("#chartMetric option").count();
 const seedVisible = await page.locator("#seed").count();
 const checksumVisible = await page.locator("#checksum").count();
@@ -183,6 +192,7 @@ const result = {
   chartEquation,
   chartCommentary,
   chartEquationRendered,
+  metricChartSize,
   chartOptionCount,
   seedVisible,
   checksumVisible,
@@ -258,6 +268,8 @@ if (
   !chartEquation?.includes("number_of_cells_with_the_most_common_program") ||
   !chartCommentary?.includes("Each cell contains one 64-byte program") ||
   chartEquationRendered < 1 ||
+  metricChartSize.backingWidth < metricChartSize.cssWidth ||
+  metricChartSize.backingHeight < metricChartSize.cssHeight ||
   chartOptionCount !== 5 ||
   initiallyCollapsedSections !== 7 ||
   seedVisible !== 0 ||
