@@ -34,7 +34,6 @@ const canvas = mustGet<HTMLCanvasElement>("dish");
 const viewport = mustGet<HTMLDivElement>("viewport");
 const playPauseButton = mustGet<HTMLButtonElement>("playPause");
 const resetButton = mustGet<HTMLButtonElement>("reset");
-const newRunButton = mustGet<HTMLButtonElement>("newRun");
 const fullscreenButton = mustGet<HTMLButtonElement>("fullscreen");
 const mutationRateInput = mustGet<HTMLInputElement>("mutationRate");
 const checkpointIntervalInput = mustGet<HTMLInputElement>("checkpointInterval");
@@ -249,12 +248,6 @@ playPauseButton.addEventListener("click", () => {
 });
 
 resetButton.addEventListener("click", () => {
-  viewportController.resetFit();
-  movieCaptureController.resetRun();
-  post({ type: "reset", config: runtimeControls.readConfig() });
-});
-
-newRunButton.addEventListener("click", () => {
   runtimeControls.randomizeSeed();
   viewportController.resetFit();
   movieCaptureController.resetRun();

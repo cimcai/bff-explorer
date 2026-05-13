@@ -5,7 +5,7 @@ changes that preserve the simulator's substrate fidelity.
 
 ## Current Product Shape
 
-- The first screen is the soup canvas with play/reset/new/fullscreen controls
+- The first screen is the soup canvas with play/reset/fullscreen controls
   and checkpoint scrubbing.
 - Every non-canvas section starts collapsed. Do not add always-open panels
   without a strong reason.

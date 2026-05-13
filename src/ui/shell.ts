@@ -19,8 +19,7 @@ export function renderAppShell(
             <canvas id="dish" width="1920" height="1080" aria-label="2D BFF soup"></canvas>
             <div class="canvas-hud canvas-hud-top" aria-label="Canvas controls">
               <button id="playPause" class="icon-button" type="button" aria-label="Play simulation" title="Play simulation" data-tip="Play simulation">Play</button>
-              <button id="reset" class="icon-button" type="button" aria-label="Reset simulation" title="Reset simulation" data-tip="Reset simulation with the current parameter values">Reset</button>
-              <button id="newRun" class="icon-button" type="button" aria-label="New random soup" title="New random soup" data-tip="Start a new randomized soup with the current parameter values">New</button>
+              <button id="reset" class="icon-button" type="button" aria-label="Reset with new random soup" title="Reset" data-tip="Reset with a new randomized soup using the current parameter values">Reset</button>
               <button id="fullscreen" class="icon-button" type="button" aria-label="Enter fullscreen" title="Fullscreen" data-tip="Enter fullscreen">Full</button>
             </div>
             <div class="canvas-scrubber" aria-label="Checkpoint scrubber">

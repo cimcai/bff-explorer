@@ -158,11 +158,12 @@ const redundantMetricCount = await page
 const checkpointLabel = await page.locator("#checkpointLabel").textContent();
 const checkpointEpochLabel = await page.locator("#checkpointEpochLabel").textContent();
 const checkpointLatestCount = await page.locator("#checkpointLatest").count();
+const newRunCount = await page.locator("#newRun").count();
 const defaultButtonCount = await page.locator(".reset-default").count();
 const iconTooltipCount = await page.locator(".icon-button[data-tip]").count();
 const tooltipChecks = [];
 tooltipChecks.push(await inspectTooltip(page, "#fullscreen"));
-tooltipChecks.push(await inspectTooltip(page, "#newRun"));
+tooltipChecks.push(await inspectTooltip(page, "#reset"));
 tooltipChecks.push(await inspectTooltip(page, ".info"));
 const programRows = await page.locator(".program-row").count();
 const programDetail = await page.locator("#programDetailStats").textContent();
@@ -218,6 +219,7 @@ const result = {
   checkpointLabel,
   checkpointEpochLabel,
   checkpointLatestCount,
+  newRunCount,
   scrubbedCheckpointLabel,
   scrubbedEpochLabel,
   latestCheckpointLabel,
@@ -300,6 +302,7 @@ if (
   checksumVisible !== 0 ||
   redundantMetricCount !== 0 ||
   checkpointLatestCount !== 1 ||
+  newRunCount !== 0 ||
   resetMutationValue !== "0.0001220703125" ||
   movieCaptureToggleCount !== 1 ||
   movieCaptureDefaultChecked ||
@@ -324,7 +327,7 @@ if (
   interactionChangeA !== "1 change" ||
   !interactionAfterPrograms ||
   defaultButtonCount !== 0 ||
-  iconTooltipCount < 5 ||
+  iconTooltipCount < 4 ||
   tooltipChecks.some((check) => !check.visible || !check.inViewport) ||
   programRows !== 0 ||
   !programDetail?.includes("Repeated 64-byte tapes") ||

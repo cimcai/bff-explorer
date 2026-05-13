@@ -23,6 +23,9 @@ describe("app shell markup", () => {
     expect(html).toContain('id="injectReplicator"');
     expect(html).toContain('id="loadReplicatorToLab"');
     expect(html).toContain('id="resetDefaults"');
+    expect(html).toContain('id="reset"');
+    expect(html).toContain("Reset with a new randomized soup");
+    expect(html).not.toContain('id="newRun"');
     expect(html).toContain("<summary>Advanced parameters</summary>");
     expect(html).toContain("<summary>Replication movie capture</summary>");
     expect(html).toContain('id="autoMovieCapture"');
