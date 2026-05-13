@@ -167,6 +167,9 @@ const iconTooltipCount = await page.locator(".icon-button[data-tip]").count();
 const tooltipChecks = [];
 tooltipChecks.push(await inspectTooltip(page, "#fullscreen"));
 tooltipChecks.push(await inspectTooltip(page, "#reset"));
+if (await isSectionCollapsed(page, "parameters")) {
+  await page.locator('[data-collapsible-section="parameters"] [data-collapse-toggle]').click();
+}
 tooltipChecks.push(await inspectTooltip(page, ".info"));
 const programRows = await page.locator(".program-row").count();
 const programDetail = await page.locator("#programDetailStats").textContent();
@@ -174,7 +177,7 @@ const programDetailValid =
   programRows === 0
     ? programDetail?.includes("Repeated 64-byte tapes")
     : /\d+ cells/.test(programDetail ?? "");
-const resourceLinks = await page.locator(".resources a").count();
+const resourceLinks = await page.locator(".docs-section a").count();
 
 await page.locator("#playPause").click();
 await page.waitForTimeout(150);
@@ -274,25 +277,28 @@ console.log(JSON.stringify(result, null, 2));
 if (
   errors.length > 0 ||
   desktopLayout.parametersRightOfCanvas ||
+  !desktopLayout.docsBelowCanvas ||
   !desktopLayout.parametersBelowCanvas ||
+  !desktopLayout.parametersBelowDocs ||
   !desktopLayout.replicatorBelowParameters ||
   !desktopLayout.movieCaptureBelowReplicator ||
   !desktopLayout.analysisSideBySide ||
-  !desktopLayout.docsSideBySide ||
   !desktopLayout.collapseButtonsContained ||
   !desktopLayout.noHorizontalOverflow ||
+  !midLayout.docsBelowCanvas ||
   !midLayout.parametersBelowCanvas ||
+  !midLayout.parametersBelowDocs ||
   !midLayout.replicatorBelowParameters ||
   !midLayout.movieCaptureBelowReplicator ||
   !midLayout.analysisStacked ||
-  !midLayout.docsStacked ||
   !midLayout.collapseButtonsContained ||
   !midLayout.noHorizontalOverflow ||
+  !mobileLayout.docsBelowCanvas ||
   !mobileLayout.parametersBelowCanvas ||
+  !mobileLayout.parametersBelowDocs ||
   !mobileLayout.replicatorBelowParameters ||
   !mobileLayout.movieCaptureBelowReplicator ||
   !mobileLayout.analysisStacked ||
-  !mobileLayout.docsStacked ||
   !mobileLayout.checkpointButtonSameTopRow ||
   !mobileLayout.collapseButtonsContained ||
   !mobileLayout.noHorizontalOverflow ||
@@ -315,7 +321,7 @@ if (
   metricChartSize.backingWidth < metricChartSize.cssWidth ||
   metricChartSize.backingHeight < metricChartSize.cssHeight ||
   chartOptionCount !== 5 ||
-  initiallyCollapsedSections !== 9 ||
+  initiallyCollapsedSections !== 8 ||
   seedVisible !== 0 ||
   checksumVisible !== 0 ||
   redundantMetricCount !== 0 ||
@@ -334,7 +340,7 @@ if (
   repeatedRowsAfterInjection < 1 ||
   !repeatedDetailAfterInjection?.includes("3 cells") ||
   !loadedReplicatorA?.includes("[[{.>]-]") ||
-  collapseToggleCount !== 9 ||
+  collapseToggleCount !== 8 ||
   collapseButtonCount !== 0 ||
   !interactionInitiallyCollapsed ||
   !interactionExpanded ||
@@ -413,13 +419,12 @@ async function inspectResponsiveLayout(page) {
       return { left, right, top, bottom, width, height };
     };
     const viewport = rect("#viewport");
+    const docs = rect('[data-collapsible-section="docs"]');
     const parameters = rect('[data-collapsible-section="parameters"]');
     const replicator = rect('[data-collapsible-section="replicator"]');
     const movieCapture = rect('[data-collapsible-section="movie-capture"]');
     const programs = rect('[data-collapsible-section="programs"]');
     const interaction = rect('[data-collapsible-section="interaction"]');
-    const explanation = rect('[data-collapsible-section="explanation"]');
-    const resources = rect('[data-collapsible-section="resources"]');
     const checkpointInput = rect("#checkpointScrubber");
     const checkpointLatest = rect("#checkpointLatest");
     const collapseButtonsContained = Array.from(
@@ -441,8 +446,12 @@ async function inspectResponsiveLayout(page) {
     return {
       parametersRightOfCanvas:
         Boolean(viewport && parameters) && parameters.left >= viewport.right + 8,
+      docsBelowCanvas:
+        Boolean(viewport && docs) && docs.top >= viewport.bottom + 8,
       parametersBelowCanvas:
         Boolean(viewport && parameters) && parameters.top >= viewport.bottom + 8,
+      parametersBelowDocs:
+        Boolean(docs && parameters) && parameters.top >= docs.bottom + 8,
       replicatorBelowParameters:
         Boolean(parameters && replicator) && replicator.top >= parameters.bottom + 8,
       movieCaptureBelowReplicator:
@@ -456,14 +465,6 @@ async function inspectResponsiveLayout(page) {
         Boolean(programs && interaction) &&
         interaction.top >= programs.bottom + 8 &&
         Math.abs(programs.left - interaction.left) < 8,
-      docsSideBySide:
-        Boolean(explanation && resources) &&
-        Math.abs(explanation.top - resources.top) < 24 &&
-        resources.left >= explanation.right + 8,
-      docsStacked:
-        Boolean(explanation && resources) &&
-        resources.top >= explanation.bottom + 8 &&
-        Math.abs(explanation.left - resources.left) < 8,
       checkpointButtonSameTopRow:
         Boolean(checkpointInput && checkpointLatest) &&
       checkpointLatest.bottom <= checkpointInput.top + 2,

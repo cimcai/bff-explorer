@@ -30,8 +30,27 @@ export function renderAppShell(
             </div>
           </div>
 
+          <section class="docs-section collapsible-section collapsed" aria-label="Documentation" data-collapsible-section="docs">
+            ${sectionHead("Docs", "Core rules, replication meaning, and source links.", true)}
+            <div class="section-body docs-body" data-collapse-body>
+              <p><strong>State.</strong> The world is a fixed 240 by 135 grid. Each cell stores one 64-byte BFF tape. There are no organisms, resources, fitness scores, births, or deaths.</p>
+              <p><strong>Language.</strong> BFF is a self-modifying <a href="https://www.brainfuck.org/brainfuck.html" target="_blank" rel="noreferrer">Brainfuck</a> variant: the tape is both program and memory. Ten byte values execute as instructions: <code>[ ] + - . , &lt; &gt; { }</code>. Byte <code>0</code> is null and controls loops; every other byte is inert data until execution changes it.</p>
+              <p><strong>Epoch.</strong> Each epoch visits cells in random order. An unused cell samples one radius-2 neighbor; if that neighbor is unused, the pair executes once. Each cell participates in at most one interaction per epoch.</p>
+              <p><strong>Interaction.</strong> The two 64-byte tapes form a 128-byte buffer. Mutation applies first. The BFF interpreter starts at program counter <code>0</code> with both heads at wrapped index <code>0</code>, runs up to <code>8192</code> instruction reads, then writes the first 64 bytes back to cell A and the last 64 bytes back to cell B.</p>
+              <p><strong>Skipped cells.</strong> Cells that do not execute still receive per-byte mutation. No cell is protected.</p>
+              <p><strong>Replication.</strong> The simulator does not label replicators. A replicator is a 64-byte tape whose execution tends to write exact or near copies into neighboring cells often enough that its pattern spreads.</p>
+              <p><strong>Spatial dynamics.</strong> Local interactions make replication spread as neighborhoods or waves. Mutation can create variants, damage existing copies, or change which variant spreads fastest.</p>
+              <p><strong>Timing.</strong> Exact 2D runs can take a long time. Random soups may run thousands of epochs without a visible wave; a stalled run by 16,000 epochs is normal.</p>
+              <p class="docs-links">
+                <a href="https://arxiv.org/abs/2406.19108" target="_blank" rel="noreferrer">Original paper</a>
+                <a href="https://whatisintelligence.antikythera.org/chapter-01/#artificial-life" target="_blank" rel="noreferrer">Online book chapter</a>
+                <a href="https://youtu.be/07NoZwvgJ_M?si=WuSU2ahXNOH80wUV&amp;t=108" target="_blank" rel="noreferrer">Example emergence run</a>
+              </p>
+            </div>
+          </section>
+
           <section class="panel parameters-panel collapsible-section collapsed" aria-label="Simulation parameters" data-collapsible-section="parameters">
-            ${sectionHead("Parameters", "Defaults favor autonomous emergence; tune mutation, checkpoints, and worker pacing.", true)}
+            ${sectionHead("Parameters", "Defaults favor autonomous emergence; tune mutation, checkpoints, and update speed.", true)}
             <div class="section-body panel-grid" data-collapse-body>
               ${controlMarkup(defaults, "Mutation rate", "mutationRate", String(config.mutationRate), "Probability that each byte is replaced by a random byte during an epoch. The default keeps low background mutation on so random soups can keep exploring candidate programs instead of only preserving injected presets.")}
               ${controlMarkup(defaults, "Checkpoint interval", "checkpointInterval", String(config.checkpointInterval), "Number of epochs between saved scrub states. Coarser checkpoints use less memory.")}
@@ -105,7 +124,7 @@ export function renderAppShell(
           </section>
 
           <section class="interaction-section collapsible-section collapsed" aria-label="Pair interaction lab" data-collapsible-section="interaction">
-            ${sectionHead("Pair Interaction Lab", "Enter two 64-byte cells and run the deterministic BFF execution step used inside a local interaction.", true)}
+            ${sectionHead("Pair Interaction Lab", "Run one deterministic two-cell BFF step outside the soup.", true)}
             <div class="section-body interaction-lab" data-collapse-body>
               <p class="interaction-note">Use this to inspect one two-cell execution step. The lab omits random mutation so the direct effect of the two tapes is reproducible. Inputs decode to 64 bytes; shorter cells are padded with <code>\\0</code>, longer cells are truncated, and escapes such as <code>\\0</code> and <code>\\x2b</code> let you enter exact byte values.</p>
               <div class="interaction-editors">
@@ -148,36 +167,6 @@ export function renderAppShell(
           </dl>
         </section>
       </section>
-
-      <div class="docs-layout">
-        <section class="explanation collapsible-section collapsed" data-collapsible-section="explanation">
-          ${sectionHead("How It Works", "State, interaction rule, and sources of change.", true)}
-          <div class="section-body explainer-grid" data-collapse-body>
-            <p><strong>State.</strong> The world is a fixed 240 by 135 grid. Each cell stores one 64-byte BFF tape. There are no separate organisms, resources, fitness scores, births, or deaths.</p>
-            <p><strong>Language.</strong> BFF is a self-modifying extension of <a href="https://www.brainfuck.org/brainfuck.html" target="_blank" rel="noreferrer">Brainfuck</a>: the tape is both program and memory. Ten byte values execute as instructions: <code>[ ] + - . , &lt; &gt; { }</code>. Byte <code>0</code> is null and controls loops. Every other byte is inert data unless execution changes it.</p>
-            <p><strong>Pairing.</strong> Each epoch uses the paper-style local scheduler. The simulator creates a random permutation of all grid cell indices, visits cells in that order, samples one radius-2 neighbor for each unused visited cell, and accepts the pair only if that neighbor is also unused. A cell can participate in at most one interaction per epoch.</p>
-            <p><strong>Interaction.</strong> The two 64-byte tapes are joined into one 128-byte buffer. Mutation is applied first: each byte is independently replaced by a random byte with probability equal to the mutation rate. The BFF interpreter starts at program counter <code>0</code> with both heads at wrapped index <code>0</code>, runs for at most <code>8192</code> instruction reads, then writes the first 64 bytes back to the first cell and the last 64 bytes back to the second cell.</p>
-            <p><strong>Skipped cells.</strong> A cell that does not execute still receives the same per-byte mutation step. No cell is protected from mutation.</p>
-            <p><strong>Replication.</strong> A replicator is not labeled by the simulator. It is a 64-byte tape whose execution tends to write copies of itself, or close variants of itself, into neighboring tapes often enough that the tape becomes more common over time.</p>
-            <p><strong>Spatial dynamics.</strong> Because cells only interact with nearby cells, a replicating tape expands through adjacent neighborhoods instead of appearing everywhere at once. Mutation can create variants, damage existing replicators, or change which variant spreads fastest.</p>
-            <p><strong>Practical timing.</strong> Exact 2D runs are deliberately hard: a random soup can run for many thousands of epochs without a visible wave. The paper's non-spatial mutation sweep still left about 40-60% of runs below the complexity threshold after 16,000 epochs, and 2D locality slows spread after a replicator appears.</p>
-          </div>
-        </section>
-
-        <footer class="resources collapsible-section collapsed" data-collapsible-section="resources">
-          ${sectionHead("Sources", "Original sources and a reference emergence run.", true)}
-          <div class="section-body resources-body" data-collapse-body>
-            <div>
-            <p>
-              <a href="https://arxiv.org/abs/2406.19108" target="_blank" rel="noreferrer">Original paper</a>
-              <a href="https://whatisintelligence.antikythera.org/chapter-01/#artificial-life" target="_blank" rel="noreferrer">Online book chapter</a>
-              <a href="https://youtu.be/07NoZwvgJ_M?si=WuSU2ahXNOH80wUV&amp;t=108" target="_blank" rel="noreferrer">Example emergence run</a>
-            </p>
-            </div>
-            <p class="emergence-note">A stalled run by 16,000 epochs is normal. In the paper's non-spatial mutation sweep, successful runs reached the complexity threshold after roughly 6,000-7,000 epochs on average, but 40-60% of runs still had not crossed it by 16,000 epochs.</p>
-          </div>
-        </footer>
-      </div>
     </section>
   `;
 }

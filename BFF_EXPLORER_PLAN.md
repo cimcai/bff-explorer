@@ -6,14 +6,16 @@ changes that preserve the simulator's substrate fidelity.
 ## Current Product Shape
 
 - The first screen is the soup canvas with play/reset/fullscreen controls
-  and checkpoint scrubbing, followed by collapsed Parameters, Replicator
-  Injection, and Movie Capture sections below.
+  and checkpoint scrubbing, followed by collapsed Docs, Parameters,
+  Replicator Injection, and Movie Capture sections below.
 - Every non-canvas section starts collapsed. Do not add always-open panels
   without a strong reason.
 - Defaults should favor autonomous replicator emergence from random soup.
   Injected presets are secondary comparison/demo tools, not the primary path.
 - Numeric simulation tuning lives in the Parameters section without a nested
   advanced subgroup.
+- Docs combines the model rules, replication meaning, practical timing note,
+  and source links in one collapsed section directly below the canvas.
 - The program browser intentionally hides singleton programs. Random soup
   produces thousands of one-off tapes; showing them is UI noise.
 - Movie capture is a secondary top-level workflow, not part of the default

@@ -144,8 +144,7 @@ p,
   height: min(60vh, 700px);
 }
 
-.analysis-layout,
-.docs-layout {
+.analysis-layout {
   display: grid;
   grid-template-columns: 1fr;
   gap: 14px;
@@ -296,8 +295,7 @@ body.viewport-fullscreen-active {
 .programs-section,
 .interaction-section,
 .metrics-section,
-.explanation,
-.resources {
+.docs-section {
   border: 1px solid var(--hairline);
   border-radius: 8px;
   padding: 14px;
@@ -898,20 +896,19 @@ dd {
   text-align: right;
 }
 
-.explainer-grid {
+.docs-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   max-width: 980px;
 }
 
-.explainer-grid p,
-.resources p {
+.docs-body p {
   color: var(--ink-soft);
   line-height: 1.45;
 }
 
-.explainer-grid strong {
+.docs-body strong {
   color: var(--ink);
 }
 
@@ -919,25 +916,21 @@ code {
   color: #7a5010;
 }
 
-.resources-body {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
+.docs-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding-top: 2px;
 }
 
-.resources a {
+.docs-links a {
   display: inline-flex;
-  margin: 0 14px 8px 0;
   color: var(--accent-strong);
   text-decoration: none;
 }
 
-.resources a:hover {
+.docs-links a:hover {
   text-decoration: underline;
-}
-
-.emergence-note {
-  color: var(--ink-soft);
 }
 
 @container (min-width: 760px) {
@@ -952,14 +945,6 @@ code {
     align-items: start;
   }
 
-  .docs-layout {
-    grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
-    align-items: start;
-  }
-
-  .docs-layout .resources-body {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 1399px) {
@@ -978,10 +963,8 @@ code {
   }
 
   .analysis-layout,
-  .docs-layout,
   .interaction-editors,
-  .interaction-results,
-  .resources {
+  .interaction-results {
     grid-template-columns: 1fr;
   }
 

@@ -52,7 +52,9 @@ describe("app shell markup", () => {
 
     expect(html).toContain('id="programList"');
     expect(html).toContain('class="analysis-layout"');
-    expect(html).toContain('class="docs-layout"');
+    expect(html).toContain('class="docs-section collapsible-section collapsed"');
+    expect(html).toContain('data-collapsible-section="docs"');
+    expect(html).toContain("Core rules, replication meaning, and source links.");
     expect(html).toContain('id="checkpointLatest"');
     expect(html).toContain("Checkpoint 0/0");
     expect(html).toContain("Epoch: 0");
@@ -91,8 +93,9 @@ describe("app shell markup", () => {
   it("starts every non-canvas section collapsed", () => {
     const html = renderAppShell(defaultConfig(), defaultConfig());
 
-    expect(html.match(/data-collapse-toggle/g)).toHaveLength(9);
-    expect(html.match(/role="button"/g)).toHaveLength(9);
+    expect(html.match(/data-collapse-toggle/g)).toHaveLength(8);
+    expect(html.match(/role="button"/g)).toHaveLength(8);
+    expect(html).toContain('data-collapsible-section="docs"');
     expect(html).toContain('data-collapsible-section="parameters"');
     expect(html).toContain('data-collapsible-section="replicator"');
     expect(html).toContain('data-collapsible-section="movie-capture"');
@@ -102,10 +105,10 @@ describe("app shell markup", () => {
     expect(html).toContain(
       'class="interaction-section collapsible-section collapsed"'
     );
-    expect(html.match(/aria-expanded="false"/g)).toHaveLength(9);
+    expect(html.match(/aria-expanded="false"/g)).toHaveLength(8);
     expect(html).toContain('data-collapsible-section="diagnostics"');
-    expect(html).toContain('data-collapsible-section="explanation"');
-    expect(html).toContain('data-collapsible-section="resources"');
+    expect(html).not.toContain('data-collapsible-section="explanation"');
+    expect(html).not.toContain('data-collapsible-section="resources"');
     expect(html).not.toContain('class="viewport" data-collapsible-section');
   });
 
@@ -121,6 +124,9 @@ describe("app shell markup", () => {
       html.indexOf('class="viewport"')
     );
     expect(html.indexOf('class="viewport"')).toBeLessThan(
+      html.indexOf('data-collapsible-section="docs"')
+    );
+    expect(html.indexOf('data-collapsible-section="docs"')).toBeLessThan(
       html.indexOf('data-collapsible-section="parameters"')
     );
     expect(html.indexOf('data-collapsible-section="parameters"')).toBeLessThan(
