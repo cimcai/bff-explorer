@@ -70,7 +70,7 @@ export function renderAppShell(
           </section>
 
           <section class="panel movie-section collapsible-section collapsed" aria-label="Movie capture" data-collapsible-section="movie-capture">
-            ${sectionHead("Movie Capture", "Auto-save a shareable movie when replication is detected.", true)}
+            ${sectionHead("Movie Capture", "Auto-save a browser-playable WebM movie when replication is detected.", true)}
             <div class="section-body" data-collapse-body>
               ${movieCaptureMarkup()}
             </div>

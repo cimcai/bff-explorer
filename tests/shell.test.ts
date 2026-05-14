@@ -15,6 +15,7 @@ describe("app shell markup", () => {
     expect(html).toContain('data-collapsible-section="replicator"');
     expect(html).toContain('data-collapsible-section="movie-capture"');
     expect(html).toContain("Movie Capture");
+    expect(html).toContain("browser-playable WebM movie");
     expect(html).not.toContain("default is zero");
     expect(html).toContain('id="timeBudgetMs"');
     expect(html).toContain(`title="Default: ${config.timeBudgetMs}"`);

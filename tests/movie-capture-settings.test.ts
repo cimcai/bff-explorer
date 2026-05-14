@@ -21,22 +21,27 @@ describe("movie capture media settings", () => {
     expect(MOVIE_VIDEO_BITS_PER_SECOND).toBeLessThanOrEqual(3_000_000);
   });
 
-  it("prefers mp4 when the browser supports it", () => {
+  it("prefers repairable webm even when mp4 is available", () => {
     const mimeType = preferredVideoMimeType((candidate) =>
-      candidate.startsWith("video/mp4")
-    );
-
-    expect(mimeType).toBe("video/mp4;codecs=avc1.42E01E");
-    expect(videoExtension(mimeType)).toBe("mp4");
-  });
-
-  it("falls back to high-quality webm when mp4 is unavailable", () => {
-    const mimeType = preferredVideoMimeType((candidate) =>
-      candidate === "video/webm;codecs=vp9"
+      candidate.startsWith("video/mp4") || candidate === "video/webm;codecs=vp9"
     );
 
     expect(mimeType).toBe("video/webm;codecs=vp9");
     expect(videoExtension(mimeType)).toBe("webm");
+  });
+
+  it("falls back through webm codecs", () => {
+    const mimeType = preferredVideoMimeType((candidate) =>
+      candidate === "video/webm;codecs=vp8"
+    );
+
+    expect(mimeType).toBe("video/webm;codecs=vp8");
+    expect(videoExtension(mimeType)).toBe("webm");
+  });
+
+  it("does not use mp4 for rolling pre-roll capture", () => {
+    expect(preferredVideoMimeType((candidate) => candidate.startsWith("video/mp4")))
+      .toBe("");
   });
 
   it("passes bitrate and keyframe hints to MediaRecorder", () => {

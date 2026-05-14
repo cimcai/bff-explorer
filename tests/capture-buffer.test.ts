@@ -55,12 +55,12 @@ describe("RollingCaptureBuffer", () => {
     ]);
   });
 
-  it("keeps mp4 chunks unchanged", async () => {
+  it("keeps non-webm chunks unchanged", async () => {
     const buffer = new RollingCaptureBuffer();
     buffer.add(new Blob(["one"]), 0);
     buffer.add(new Blob(["two"]), 1_000);
 
-    await expect(buffer.toPlayableBlob("video/mp4").then((blob) => blob.text()))
+    await expect(buffer.toPlayableBlob("video/other").then((blob) => blob.text()))
       .resolves.toBe("onetwo");
   });
 });

@@ -65,14 +65,16 @@ export function createMovieCaptureController(
   let lastStatus: SimulationStatus | null = null;
   let lastFile: File | null = null;
   let mimeType = "";
+  let supportedMimeType = "";
 
   captureCanvas.width = MOVIE_CAPTURE_WIDTH;
   captureCanvas.height = MOVIE_CAPTURE_HEIGHT;
   shareButton.hidden = true;
 
+  supportedMimeType = detectSupportedMimeType();
   if (!canCapture()) {
     enabledInput.disabled = true;
-    setStatus("error", "Movie capture unavailable in this browser.");
+    setStatus("error", unsupportedCaptureMessage());
   } else {
     setStatus("off", "Movie capture off.");
   }
@@ -107,7 +109,7 @@ export function createMovieCaptureController(
       }
       setStatus(
         "watching",
-        `Watching; ${(buffer.bufferedMs() / 1000).toFixed(0)}s buffered.`
+        `Watching WebM; ${(buffer.bufferedMs() / 1000).toFixed(0)}s buffered.`
       );
       return;
     }
@@ -136,7 +138,7 @@ export function createMovieCaptureController(
     if (state === "triggered" || state === "saving") {
       stop();
     } else if (state === "watching") {
-      setStatus("watching", "Watching; buffer reset.");
+      setStatus("watching", "Watching WebM; buffer reset.");
     }
   }
 
@@ -155,9 +157,12 @@ export function createMovieCaptureController(
     lastFile = null;
     shareButton.hidden = true;
     buffer.clear();
-    mimeType = preferredVideoMimeType((candidate) =>
-      MediaRecorder.isTypeSupported(candidate)
-    );
+    mimeType = supportedMimeType || detectSupportedMimeType();
+    if (!mimeType) {
+      enabledInput.checked = false;
+      setStatus("error", unsupportedCaptureMessage());
+      return;
+    }
 
     try {
       stream = captureCanvas.captureStream(MOVIE_CAPTURE_FPS);
@@ -169,7 +174,7 @@ export function createMovieCaptureController(
       });
       recorder.start(MOVIE_TIMESLICE_MS);
       state = "watching";
-      setStatus("watching", "Watching; rolling buffer empty.");
+      setStatus("watching", "Watching WebM; rolling buffer empty.");
       drawCaptureFrame();
     } catch {
       fail("Movie capture could not start.");
@@ -249,7 +254,7 @@ export function createMovieCaptureController(
       buffer.clear();
       setStatus(
         "saved",
-        `Saved replication movie at epoch ${epoch.toLocaleString()}.`
+        `Saved WebM replication movie at epoch ${epoch.toLocaleString()}.`
       );
     } catch {
       fail("Movie capture failed while saving.");
@@ -313,10 +318,12 @@ export function createMovieCaptureController(
   }
 
   function canCapture(): boolean {
+    supportedMimeType = detectSupportedMimeType();
     return (
       Boolean(captureContext) &&
       typeof captureCanvas.captureStream === "function" &&
-      typeof MediaRecorder !== "undefined"
+      typeof MediaRecorder !== "undefined" &&
+      Boolean(supportedMimeType)
     );
   }
 
@@ -326,6 +333,22 @@ export function createMovieCaptureController(
     resetRun,
     stop
   };
+}
+
+function detectSupportedMimeType(): string {
+  if (
+    typeof MediaRecorder === "undefined" ||
+    typeof MediaRecorder.isTypeSupported !== "function"
+  ) {
+    return "";
+  }
+  return preferredVideoMimeType((candidate) =>
+    MediaRecorder.isTypeSupported(candidate)
+  );
+}
+
+function unsupportedCaptureMessage(): string {
+  return "Movie capture needs WebM MediaRecorder support in this browser.";
 }
 
 function downloadBlob(blob: Blob, filename: string): void {

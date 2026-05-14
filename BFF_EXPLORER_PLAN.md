@@ -25,6 +25,9 @@ changes that preserve the simulator's substrate fidelity.
   produces thousands of one-off tapes; showing them is UI noise.
 - Movie capture is a secondary top-level workflow, not part of the default
   autonomous-emergence path.
+- Movie capture intentionally records WebM. Do not prefer MediaRecorder MP4
+  until there is a real MP4 muxing path; rolling pre-roll capture splices old
+  chunks, and MP4 fragments produced broken QuickTime files.
 
 ## Engineering Priorities
 
