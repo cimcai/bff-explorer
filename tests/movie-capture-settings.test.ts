@@ -3,6 +3,7 @@ import {
   MOVIE_CAPTURE_FPS,
   MOVIE_CAPTURE_HEIGHT,
   MOVIE_CAPTURE_WIDTH,
+  MOVIE_MAX_BUFFER_BYTES,
   MOVIE_POST_ROLL_MS,
   MOVIE_PRE_ROLL_MS,
   MOVIE_VIDEO_BITS_PER_SECOND,
@@ -19,6 +20,7 @@ describe("movie capture media settings", () => {
     expect(MOVIE_PRE_ROLL_MS).toBe(10_000);
     expect(MOVIE_POST_ROLL_MS).toBe(60_000);
     expect(MOVIE_VIDEO_BITS_PER_SECOND).toBeLessThanOrEqual(3_000_000);
+    expect(MOVIE_MAX_BUFFER_BYTES).toBeLessThanOrEqual(48 * 1024 * 1024);
   });
 
   it("prefers repairable webm even when mp4 is available", () => {

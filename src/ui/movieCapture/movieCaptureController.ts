@@ -7,6 +7,7 @@ import {
   MOVIE_CAPTURE_FPS,
   MOVIE_CAPTURE_HEIGHT,
   MOVIE_CAPTURE_WIDTH,
+  MOVIE_MAX_BUFFER_BYTES,
   MOVIE_POST_ROLL_MS,
   MOVIE_PRE_ROLL_MS,
   MOVIE_TIMESLICE_MS,
@@ -101,7 +102,7 @@ export function createMovieCaptureController(
   function update(statusUpdate: SimulationStatus): void {
     lastStatus = statusUpdate;
     if (state === "watching") {
-      buffer.pruneBefore(performance.now() - MOVIE_PRE_ROLL_MS);
+      pruneCaptureBuffer();
       const result = detector.observe(statusUpdate);
       if (result.detected) {
         trigger(result);
@@ -223,7 +224,9 @@ export function createMovieCaptureController(
     }
     buffer.add(event.data, performance.now());
     if (state === "watching") {
-      buffer.pruneBefore(performance.now() - MOVIE_PRE_ROLL_MS);
+      pruneCaptureBuffer();
+    } else {
+      buffer.pruneToMaxBytes(MOVIE_MAX_BUFFER_BYTES);
     }
   }
 
@@ -306,6 +309,11 @@ export function createMovieCaptureController(
   function stopStream(): void {
     stream?.getTracks().forEach((track) => track.stop());
     stream = null;
+  }
+
+  function pruneCaptureBuffer(): void {
+    buffer.pruneBefore(performance.now() - MOVIE_PRE_ROLL_MS);
+    buffer.pruneToMaxBytes(MOVIE_MAX_BUFFER_BYTES);
   }
 
   function setStatus(nextState: CaptureState, text: string): void {

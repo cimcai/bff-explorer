@@ -7,6 +7,12 @@ import {
   DEFAULT_MUTATION_RATE,
   DEFAULT_TIME_BUDGET_MS,
   MAX_CHECKPOINTS,
+  MAX_CHECKPOINT_MEMORY_BYTES,
+  MAX_GRID_HEIGHT,
+  MAX_GRID_WIDTH,
+  MAX_INSTRUCTION_READS,
+  MAX_PROGRAM_COUNT,
+  MAX_TIME_BUDGET_MS,
   METRIC_HISTORY_LIMIT,
   PAIR_TAPE_SIZE,
   TAPE_SIZE,
@@ -438,7 +444,8 @@ export class BffSimulator {
     };
     this.nextCheckpointId += 1;
     this.checkpoints.push(checkpoint);
-    if (this.checkpoints.length > MAX_CHECKPOINTS) {
+    const maxCheckpoints = maxCheckpointCountForBytes(this.soup.byteLength);
+    while (this.checkpoints.length > maxCheckpoints) {
       this.checkpoints.shift();
     }
     this.activeCheckpointId = checkpoint.id;
@@ -496,16 +503,35 @@ function createRng(seed: number, stream: number): XorShift32 {
 }
 
 export function sanitizeConfig(config: SimulationConfig): SimulationConfig {
+  let gridWidth = clampInteger(config.gridWidth, 2, MAX_GRID_WIDTH);
+  let gridHeight = clampInteger(config.gridHeight, 2, MAX_GRID_HEIGHT);
+  if (gridWidth * gridHeight > MAX_PROGRAM_COUNT) {
+    gridHeight = Math.max(2, Math.floor(MAX_PROGRAM_COUNT / gridWidth));
+  }
+
   return {
-    gridWidth: Math.max(2, Math.floor(config.gridWidth)),
-    gridHeight: Math.max(2, Math.floor(config.gridHeight)),
+    gridWidth,
+    gridHeight,
     seed: Math.floor(config.seed) >>> 0,
     mutationRate: clampNumber(config.mutationRate, 0, 1),
-    checkpointInterval: Math.max(1, Math.floor(config.checkpointInterval)),
-    metricInterval: Math.max(1, Math.floor(config.metricInterval)),
-    timeBudgetMs: clampNumber(config.timeBudgetMs, 1, 100),
-    maxInstructionReads: Math.max(1, Math.floor(config.maxInstructionReads))
+    checkpointInterval: clampInteger(config.checkpointInterval, 1, 1_000_000),
+    metricInterval: clampInteger(config.metricInterval, 1, 1_000_000),
+    timeBudgetMs: clampNumber(config.timeBudgetMs, 1, MAX_TIME_BUDGET_MS),
+    maxInstructionReads: clampInteger(
+      config.maxInstructionReads,
+      1,
+      MAX_INSTRUCTION_READS
+    )
   };
+}
+
+export function maxCheckpointCountForBytes(soupByteLength: number): number {
+  const bytesPerCheckpoint = Math.max(1, soupByteLength);
+  const memoryLimitedCount = Math.max(
+    1,
+    Math.floor(MAX_CHECKPOINT_MEMORY_BYTES / bytesPerCheckpoint)
+  );
+  return Math.min(MAX_CHECKPOINTS, memoryLimitedCount);
 }
 
 function clampNumber(value: number, min: number, max: number): number {

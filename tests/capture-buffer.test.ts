@@ -33,6 +33,24 @@ describe("RollingCaptureBuffer", () => {
     ]);
   });
 
+  it("prunes old chunks to enforce a byte cap while preserving the header", () => {
+    const buffer = new RollingCaptureBuffer();
+    const header = new Blob(["header"]);
+    const oldChunk = new Blob(["old"]);
+    const keptChunk = new Blob(["kept"]);
+
+    buffer.add(header, 0);
+    buffer.add(oldChunk, 1_000);
+    buffer.add(keptChunk, 2_000);
+    buffer.pruneToMaxBytes(header.size + keptChunk.size);
+
+    expect(buffer.totalBytes()).toBe(header.size + keptChunk.size);
+    expect(buffer.chunksForSave().map((chunk) => chunk.blob)).toEqual([
+      header,
+      keptChunk
+    ]);
+  });
+
   it("builds a playable WebM blob from a header and normalized cluster chunks", async () => {
     const buffer = new RollingCaptureBuffer();
     const ebmlHeader = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x01]);

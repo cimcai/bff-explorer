@@ -1,14 +1,42 @@
 import { describe, expect, it } from "vitest";
 import { checksumBytes } from "../src/simulation/checksum";
-import { TAPE_SIZE } from "../src/simulation/constants";
+import {
+  MAX_CHECKPOINT_MEMORY_BYTES,
+  MAX_CHECKPOINTS,
+  MAX_INSTRUCTION_READS,
+  MAX_TIME_BUDGET_MS,
+  TAPE_SIZE
+} from "../src/simulation/constants";
 import { knownReplicatorBytes } from "../src/simulation/knownReplicator";
 import { replicatorPresetBytes } from "../src/simulation/replicatorPresets";
 import { computeTopPrograms } from "../src/simulation/programSummary";
-import { BffSimulator, defaultConfig } from "../src/simulation/simulator";
+import {
+  BffSimulator,
+  defaultConfig,
+  maxCheckpointCountForBytes,
+  sanitizeConfig
+} from "../src/simulation/simulator";
 
 describe("BffSimulator checkpoints", () => {
   it("defaults to low nonzero mutation for autonomous exploration", () => {
     expect(defaultConfig().mutationRate).toBe(1 / 8192);
+  });
+
+  it("sanitizes runtime inputs to tab-safe upper bounds", () => {
+    const defaults = defaultConfig();
+    const config = sanitizeConfig({
+      ...defaults,
+      gridWidth: 10_000,
+      gridHeight: 10_000,
+      timeBudgetMs: 1_000,
+      maxInstructionReads: 1_000_000
+    });
+
+    expect(config.gridWidth * config.gridHeight).toBeLessThanOrEqual(
+      defaults.gridWidth * defaults.gridHeight
+    );
+    expect(config.timeBudgetMs).toBe(MAX_TIME_BUDGET_MS);
+    expect(config.maxInstructionReads).toBe(MAX_INSTRUCTION_READS);
   });
 
   it("is exactly reproducible for identical seeds and configs", () => {
@@ -185,6 +213,31 @@ describe("BffSimulator checkpoints", () => {
     expect(sim.epoch).toBe(batch.epochsRun);
   });
 
+  it("bounds checkpoint retention by count and soup memory", () => {
+    const defaultSoupBytes =
+      defaultConfig().gridWidth * defaultConfig().gridHeight * TAPE_SIZE;
+    expect(maxCheckpointCountForBytes(defaultSoupBytes)).toBe(MAX_CHECKPOINTS);
+    expect(
+      maxCheckpointCountForBytes(Math.floor(MAX_CHECKPOINT_MEMORY_BYTES / 2) + 1)
+    ).toBe(1);
+
+    const sim = new BffSimulator({
+      gridWidth: 8,
+      gridHeight: 8,
+      seed: 4,
+      mutationRate: 0,
+      checkpointInterval: 1,
+      metricInterval: 99,
+      timeBudgetMs: 1,
+      maxInstructionReads: 64
+    });
+    for (let i = 0; i < MAX_CHECKPOINTS + 4; i += 1) {
+      sim.stepEpoch();
+    }
+
+    expect(sim.getCheckpointSummaries()).toHaveLength(MAX_CHECKPOINTS);
+  });
+
   it("updates runtime controls without resetting the soup", () => {
     const sim = new BffSimulator({
       gridWidth: 8,
@@ -209,7 +262,7 @@ describe("BffSimulator checkpoints", () => {
     expect(sim.config.mutationRate).toBe(1);
     expect(sim.config.checkpointInterval).toBe(1);
     expect(sim.config.metricInterval).toBe(3);
-    expect(sim.config.timeBudgetMs).toBe(100);
+    expect(sim.config.timeBudgetMs).toBe(MAX_TIME_BUDGET_MS);
   });
 
   it("clears stale throughput stats after reset", () => {

@@ -19,9 +19,13 @@ let offscreenImageData: ImageData | undefined;
 let fallbackImageData: ImageData | undefined;
 const palette = buildPalette();
 const PUBLISH_INTERVAL_MS = 100;
-const TARGET_COMPUTE_DUTY_CYCLE = 0.82;
-const MAX_YIELD_MS = 16;
+const BACKGROUND_PUBLISH_INTERVAL_MS = 10_000;
+const FOREGROUND_TARGET_COMPUTE_DUTY_CYCLE = 0.55;
+const BACKGROUND_TARGET_COMPUTE_DUTY_CYCLE = 0.02;
+const BACKGROUND_TIME_BUDGET_MS = 1;
+const MIN_BACKGROUND_TICK_INTERVAL_MS = 5_000;
 let lastPublishAt = 0;
+let pageVisible = true;
 
 self.onmessage = (event: MessageEvent<WorkerInMessage>) => {
   const message = event.data;
@@ -43,6 +47,9 @@ self.onmessage = (event: MessageEvent<WorkerInMessage>) => {
     case "pause":
       pauseSimulation();
       postStatus();
+      break;
+    case "setPageVisible":
+      setPageVisible(message.visible);
       break;
     case "reset":
       pauseSimulation();
@@ -122,7 +129,7 @@ function scheduleTick(): void {
   if (tickTimer !== undefined) {
     return;
   }
-  tickTimer = self.setTimeout(runTick, 0);
+  tickTimer = self.setTimeout(runTick, nextTickDelay(0));
 }
 
 function runTick(): void {
@@ -132,22 +139,54 @@ function runTick(): void {
   }
 
   const started = performance.now();
-  simulator.runForBudget(simulator.config.timeBudgetMs);
+  simulator.runForBudget(currentTimeBudgetMs());
   const elapsedMs = performance.now() - started;
   publishFrameAndStatus(false);
 
   if (running) {
-    tickTimer = self.setTimeout(runTick, computeYieldDelay(elapsedMs));
+    tickTimer = self.setTimeout(runTick, nextTickDelay(elapsedMs));
   }
 }
 
-function computeYieldDelay(elapsedMs: number): number {
+function setPageVisible(visible: boolean): void {
+  if (pageVisible === visible) {
+    return;
+  }
+  pageVisible = visible;
+  if (tickTimer !== undefined) {
+    clearTimeout(tickTimer);
+    tickTimer = undefined;
+  }
+  if (visible) {
+    publishFrameAndStatus(true);
+  }
+  if (running) {
+    scheduleTick();
+  }
+}
+
+function currentTimeBudgetMs(): number {
+  return pageVisible
+    ? simulator.config.timeBudgetMs
+    : Math.min(BACKGROUND_TIME_BUDGET_MS, simulator.config.timeBudgetMs);
+}
+
+function nextTickDelay(elapsedMs: number): number {
+  if (!pageVisible) {
+    return Math.max(
+      MIN_BACKGROUND_TICK_INTERVAL_MS,
+      computeYieldDelay(elapsedMs, BACKGROUND_TARGET_COMPUTE_DUTY_CYCLE)
+    );
+  }
+  return computeYieldDelay(elapsedMs, FOREGROUND_TARGET_COMPUTE_DUTY_CYCLE);
+}
+
+function computeYieldDelay(elapsedMs: number, targetDutyCycle: number): number {
   if (elapsedMs <= 0) {
     return 0;
   }
-  const delay =
-    elapsedMs * ((1 - TARGET_COMPUTE_DUTY_CYCLE) / TARGET_COMPUTE_DUTY_CYCLE);
-  return Math.min(MAX_YIELD_MS, Math.max(0, delay));
+  const delay = elapsedMs * ((1 - targetDutyCycle) / targetDutyCycle);
+  return Math.max(0, delay);
 }
 
 function attachOffscreenCanvas(canvas: OffscreenCanvas): void {
@@ -214,10 +253,15 @@ function renderAndPost(): void {
 
 function publishFrameAndStatus(force: boolean): void {
   const now = performance.now();
-  if (!force && now - lastPublishAt < PUBLISH_INTERVAL_MS) {
+  const publishInterval = pageVisible
+    ? PUBLISH_INTERVAL_MS
+    : BACKGROUND_PUBLISH_INTERVAL_MS;
+  if (!force && now - lastPublishAt < publishInterval) {
     return;
   }
-  renderAndPost();
+  if (pageVisible || force) {
+    renderAndPost();
+  }
   lastPublishAt = performance.now();
   postStatus();
 }

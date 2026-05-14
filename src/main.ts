@@ -96,6 +96,7 @@ const interactionOutputB = mustGet<HTMLElement>("interactionOutputB");
 const tooltipLayer = mustGet<HTMLDivElement>("tooltipLayer");
 
 let running = false;
+let pageVisible = document.visibilityState === "visible";
 const worker = new Worker(new URL("./worker/sim.worker.ts", import.meta.url), {
   type: "module"
 });
@@ -242,6 +243,7 @@ if (viewportController.canUseOffscreen) {
 } else {
   post({ type: "init", config, useOffscreen: false });
 }
+post({ type: "setPageVisible", visible: pageVisible });
 
 playPauseButton.addEventListener("click", () => {
   post({ type: running ? "pause" : "play" });
@@ -256,6 +258,14 @@ resetButton.addEventListener("click", () => {
 
 window.addEventListener("pagehide", () => {
   movieCaptureController.stop();
+});
+
+document.addEventListener("visibilitychange", () => {
+  pageVisible = document.visibilityState === "visible";
+  if (!pageVisible) {
+    movieCaptureController.stop();
+  }
+  post({ type: "setPageVisible", visible: pageVisible });
 });
 
 function updateStatus(status: SimulationStatus): void {

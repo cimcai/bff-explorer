@@ -1,4 +1,5 @@
 import type { SimulationConfig } from "../simulation/simulator";
+import { MAX_CHECKPOINTS, MAX_TIME_BUDGET_MS } from "../simulation/constants";
 import {
   DEFAULT_REPLICATOR_PRESET_ID,
   REPLICATOR_PRESETS,
@@ -40,7 +41,7 @@ export function renderAppShell(
               <p><strong>Skipped cells.</strong> Cells that do not execute still receive per-byte mutation. No cell is protected.</p>
               <p><strong>Replication.</strong> The simulator does not label replicators. A functional replicator may be a whole 64-byte tape or a smaller substring that copies itself with an offset. The repeated-program list shows exact whole-cell repeats as a practical proxy; the real signal is a pattern that keeps writing itself, or close variants, into neighboring cells often enough to spread.</p>
               <p><strong>Spatial dynamics.</strong> Local interactions make replication spread as neighborhoods or waves. This locality lets variants coexist and compete; mutation can create variants, damage existing copies, or change which variant spreads fastest.</p>
-              <p><strong>Timing.</strong> Exact 2D runs can take a long time. Random soups may run thousands of epochs without a visible wave; a stalled run by 16,000 epochs is normal.</p>
+              <p><strong>Timing.</strong> Exact 2D runs can take a long time. Random soups may run thousands of epochs without a visible wave; a stalled run by 16,000 epochs is normal. Hidden tabs switch to a tiny maintenance tick and stop movie capture so the browser stays safe in the background.</p>
               <p class="docs-links">
                 <a href="https://arxiv.org/abs/2406.19108" target="_blank" rel="noreferrer">Original paper</a>
                 <a href="https://whatisintelligence.antikythera.org/chapter-01/#artificial-life" target="_blank" rel="noreferrer">Online book chapter</a>
@@ -53,9 +54,9 @@ export function renderAppShell(
             ${sectionHead("Parameters", "Defaults favor autonomous emergence; tune mutation, checkpoints, and update speed.", true)}
             <div class="section-body panel-grid" data-collapse-body>
               ${controlMarkup(defaults, "Mutation rate", "mutationRate", String(config.mutationRate), "Probability that each byte is replaced by a random byte during an epoch. The default keeps low background mutation on so random soups can keep exploring candidate programs instead of only preserving injected presets.")}
-              ${controlMarkup(defaults, "Checkpoint interval", "checkpointInterval", String(config.checkpointInterval), "Number of epochs between saved scrub states. Coarser checkpoints use less memory.")}
+              ${controlMarkup(defaults, "Checkpoint interval", "checkpointInterval", String(config.checkpointInterval), `Number of epochs between saved scrub states. Coarser checkpoints use less memory. The simulator keeps at most ${MAX_CHECKPOINTS} checkpoints under a fixed memory ceiling.`)}
               ${controlMarkup(defaults, "Metric interval", "metricInterval", String(config.metricInterval), "Number of epochs between heavier metric calculations.")}
-              ${controlMarkup(defaults, "Time budget (milliseconds)", "timeBudgetMs", String(config.timeBudgetMs), "Approximate worker compute budget per interface update.")}
+              ${controlMarkup(defaults, "Time budget (milliseconds)", "timeBudgetMs", String(config.timeBudgetMs), `Foreground worker compute budget per update. Values are capped at ${MAX_TIME_BUDGET_MS}ms, and hidden tabs are throttled automatically.`)}
               <div class="control-actions">
                 <button id="resetDefaults" type="button" title="Restore all parameter controls to their default values.">Reset to defaults</button>
               </div>
@@ -230,10 +231,12 @@ function controlMarkup(
   value: string,
   tooltip: string
 ): string {
+  const maxAttribute =
+    id === "timeBudgetMs" ? ` max="${MAX_TIME_BUDGET_MS}"` : "";
   return `
     <label>
       <span class="label-row">${label} ${info(`${tooltip} Default: ${defaults[id]}.`)}</span>
-      <input id="${id}" type="number" min="0" step="any" value="${value}" title="Default: ${defaults[id]}" />
+      <input id="${id}" type="number" min="0" step="any" value="${value}" title="Default: ${defaults[id]}"${maxAttribute} />
     </label>
   `;
 }

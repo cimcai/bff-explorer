@@ -13,6 +13,7 @@ export type WorkerInMessage =
     }
   | { type: "play" }
   | { type: "pause" }
+  | { type: "setPageVisible"; visible: boolean }
   | { type: "reset"; config: SimulationConfig }
   | { type: "updateConfig"; config: RuntimeConfigUpdate }
   | {

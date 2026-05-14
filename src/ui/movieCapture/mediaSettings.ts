@@ -5,6 +5,7 @@ export const MOVIE_PRE_ROLL_MS = 10_000;
 export const MOVIE_POST_ROLL_MS = 60_000;
 export const MOVIE_TIMESLICE_MS = 1_000;
 export const MOVIE_VIDEO_BITS_PER_SECOND = 2_800_000;
+export const MOVIE_MAX_BUFFER_BYTES = 48 * 1024 * 1024;
 
 const MIME_CANDIDATES = [
   // Rolling pre-roll capture drops old chunks. MediaRecorder MP4 fragments are

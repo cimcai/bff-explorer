@@ -6,14 +6,17 @@ export interface CaptureChunk {
 export class RollingCaptureBuffer {
   private headerChunk: CaptureChunk | null = null;
   private chunks: CaptureChunk[] = [];
+  private byteSize = 0;
 
   add(blob: Blob, recordedAt: number): void {
     const chunk = { blob, recordedAt };
     if (!this.headerChunk) {
       this.headerChunk = chunk;
+      this.byteSize += blob.size;
       return;
     }
     this.chunks.push(chunk);
+    this.byteSize += blob.size;
   }
 
   clear(options: { preserveHeader: boolean } = { preserveHeader: false }): void {
@@ -21,6 +24,8 @@ export class RollingCaptureBuffer {
     if (!options.preserveHeader) {
       this.headerChunk = null;
     }
+    this.byteSize =
+      options.preserveHeader && this.headerChunk ? this.headerChunk.blob.size : 0;
   }
 
   pruneBefore(firstKeptAt: number): void {
@@ -28,7 +33,15 @@ export class RollingCaptureBuffer {
       this.chunks.length > 0 &&
       this.chunks[0].recordedAt < firstKeptAt
     ) {
-      this.chunks.shift();
+      const removed = this.chunks.shift();
+      this.byteSize -= removed?.blob.size ?? 0;
+    }
+  }
+
+  pruneToMaxBytes(maxBytes: number): void {
+    while (this.byteSize > maxBytes && this.chunks.length > 0) {
+      const removed = this.chunks.shift();
+      this.byteSize -= removed?.blob.size ?? 0;
     }
   }
 
@@ -56,6 +69,10 @@ export class RollingCaptureBuffer {
 
   chunksForSave(): CaptureChunk[] {
     return this.headerChunk ? [this.headerChunk, ...this.chunks] : [...this.chunks];
+  }
+
+  totalBytes(): number {
+    return this.byteSize;
   }
 
   async toPlayableBlob(mimeType: string): Promise<Blob> {
