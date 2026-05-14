@@ -17,6 +17,9 @@
   --accent: #256c73;
   --accent-strong: #164f57;
   --accent-soft: #dcefed;
+  --link: #0b5cad;
+  --link-hover: #083f7d;
+  --link-soft: #e8f2ff;
   --gold: #9a6a13;
   --danger: #9d3f32;
   --shadow: 0 10px 34px rgba(24, 42, 38, 0.08);
@@ -104,7 +107,16 @@ textarea {
 }
 
 a {
-  color: var(--accent-strong);
+  color: var(--link);
+  font-weight: 600;
+  text-decoration-color: rgba(11, 92, 173, 0.45);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.16em;
+}
+
+a:hover {
+  color: var(--link-hover);
+  text-decoration-color: currentColor;
 }
 
 .shell {
@@ -919,18 +931,25 @@ code {
 .docs-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  padding-top: 2px;
+  gap: 8px;
+  padding-top: 4px;
 }
 
 .docs-links a {
   display: inline-flex;
-  color: var(--accent-strong);
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid #bad5f7;
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--link-hover);
+  background: var(--link-soft);
   text-decoration: none;
 }
 
 .docs-links a:hover {
-  text-decoration: underline;
+  border-color: #84b5ef;
+  background: #d9ebff;
 }
 
 @container (min-width: 760px) {
