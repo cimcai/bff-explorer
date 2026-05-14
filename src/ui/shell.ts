@@ -76,7 +76,7 @@ export function renderAppShell(
           </section>
 
           <section class="panel movie-section collapsible-section collapsed" aria-label="Movie capture" data-collapsible-section="movie-capture">
-            ${sectionHead("Movie Capture", "Auto-save a browser-playable WebM movie when replication is detected.", true)}
+            ${sectionHead("Movie Capture", "Auto-save on replication or manually mark the current frame.", true)}
             <div class="section-body" data-collapse-body>
               ${movieCaptureMarkup()}
             </div>
@@ -275,7 +275,10 @@ function movieCaptureMarkup(): string {
         <span>Auto-save replication movie</span>
       </label>
       <p id="movieCaptureStatus" class="movie-capture-status" aria-live="polite">Movie capture off.</p>
-      <button id="shareMovieCapture" type="button" hidden>Share last movie</button>
+      <div class="movie-capture-actions">
+        <button id="manualMovieCapture" type="button" title="Mark the current frame as the event and save a WebM movie after the post-roll.">Save movie now</button>
+        <button id="shareMovieCapture" type="button" hidden>Share last movie</button>
+      </div>
       <canvas id="movieCaptureCanvas" class="movie-capture-canvas" width="1440" height="810" aria-hidden="true"></canvas>
     </div>
   `;

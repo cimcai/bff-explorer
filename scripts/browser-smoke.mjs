@@ -37,9 +37,11 @@ const initiallyCollapsedSections = await page.locator(".collapsible-section.coll
 await page.locator('[data-collapsible-section="parameters"] [data-collapse-toggle]').click();
 await page.locator('[data-collapsible-section="movie-capture"] [data-collapse-toggle]').click();
 const movieCaptureToggleCount = await page.locator("#autoMovieCapture").count();
+const manualMovieCaptureButtonCount = await page.locator("#manualMovieCapture").count();
 const movieCaptureDefaultChecked = await page.locator("#autoMovieCapture").isChecked();
 const movieCaptureInitialStatus = await page.locator("#movieCaptureStatus").textContent();
 const movieCaptureDisabled = await page.locator("#autoMovieCapture").isDisabled();
+const manualMovieCaptureDisabled = await page.locator("#manualMovieCapture").isDisabled();
 let movieCaptureStartedStatus = movieCaptureInitialStatus;
 if (!movieCaptureDisabled) {
   await page.locator("#autoMovieCapture").check();
@@ -47,6 +49,17 @@ if (!movieCaptureDisabled) {
     document.querySelector("#movieCaptureStatus")?.textContent?.includes("Watching")
   );
   movieCaptureStartedStatus = await page.locator("#movieCaptureStatus").textContent();
+  await page.locator("#autoMovieCapture").uncheck();
+}
+let manualMovieCaptureStatus = movieCaptureInitialStatus;
+if (!manualMovieCaptureDisabled) {
+  await page.locator("#manualMovieCapture").click();
+  await page.waitForFunction(() =>
+    document
+      .querySelector("#movieCaptureStatus")
+      ?.textContent?.includes("Manual movie capture")
+  );
+  manualMovieCaptureStatus = await page.locator("#movieCaptureStatus").textContent();
   await page.locator("#autoMovieCapture").uncheck();
 }
 const movieCaptureCanvasSize = await page.locator("#movieCaptureCanvas").evaluate((canvas) => ({
@@ -249,10 +262,13 @@ const result = {
   resetMutationValue,
   initiallyCollapsedSections,
   movieCaptureToggleCount,
+  manualMovieCaptureButtonCount,
   movieCaptureDefaultChecked,
   movieCaptureInitialStatus,
   movieCaptureDisabled,
+  manualMovieCaptureDisabled,
   movieCaptureStartedStatus,
+  manualMovieCaptureStatus,
   movieCaptureTriggerStatus,
   movieCaptureCanvasSize,
   replicatorPresetOptions,
@@ -348,9 +364,12 @@ if (
   newRunCount !== 0 ||
   resetMutationValue !== "0.0001220703125" ||
   movieCaptureToggleCount !== 1 ||
+  manualMovieCaptureButtonCount !== 1 ||
   movieCaptureDefaultChecked ||
   !movieCaptureInitialStatus?.includes("off") ||
   (!movieCaptureDisabled && !movieCaptureStartedStatus?.includes("Watching")) ||
+  (!manualMovieCaptureDisabled &&
+    !manualMovieCaptureStatus?.includes("Manual movie capture")) ||
   (!movieCaptureDisabled &&
     !movieCaptureTriggerStatus?.includes("Replication detected")) ||
   movieCaptureCanvasSize.width !== 1440 ||

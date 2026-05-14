@@ -44,6 +44,8 @@ const autoMovieCaptureInput =
   mustGet<HTMLInputElement>("autoMovieCapture");
 const movieCaptureStatus =
   mustGet<HTMLParagraphElement>("movieCaptureStatus");
+const manualMovieCaptureButton =
+  mustGet<HTMLButtonElement>("manualMovieCapture");
 const shareMovieCaptureButton =
   mustGet<HTMLButtonElement>("shareMovieCapture");
 const movieCaptureCanvas =
@@ -200,6 +202,7 @@ const movieCaptureController = createMovieCaptureController({
     captureCanvas: movieCaptureCanvas,
     enabledInput: autoMovieCaptureInput,
     status: movieCaptureStatus,
+    manualButton: manualMovieCaptureButton,
     shareButton: shareMovieCaptureButton
   }
 });

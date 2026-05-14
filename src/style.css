@@ -72,6 +72,12 @@ button:active {
   transform: translateY(1px);
 }
 
+button:disabled {
+  cursor: default;
+  opacity: 0.55;
+  transform: none;
+}
+
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -545,6 +551,18 @@ label {
 
 .movie-capture-status.error {
   color: var(--danger);
+}
+
+.movie-capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#manualMovieCapture {
+  border-color: #b8d6d2;
+  background: var(--accent-soft);
+  color: #0f373d;
 }
 
 .movie-capture-canvas {

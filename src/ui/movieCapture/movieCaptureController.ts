@@ -28,6 +28,7 @@ interface MovieCaptureRefs {
   captureCanvas: HTMLCanvasElement;
   enabledInput: HTMLInputElement;
   status: HTMLParagraphElement;
+  manualButton: HTMLButtonElement;
   shareButton: HTMLButtonElement;
 }
 
@@ -42,6 +43,7 @@ type CaptureState =
   | "saving"
   | "saved"
   | "error";
+type TriggerKind = "replication" | "manual";
 
 export function createMovieCaptureController(
   options: MovieCaptureControllerOptions
@@ -52,6 +54,7 @@ export function createMovieCaptureController(
     captureCanvas,
     enabledInput,
     status,
+    manualButton,
     shareButton
   } = refs;
   const detector = new ReplicationDetector();
@@ -63,6 +66,7 @@ export function createMovieCaptureController(
   let drawFrameId = 0;
   let postRollUntil = 0;
   let detection: ReplicationDetection | null = null;
+  let triggerKind: TriggerKind | null = null;
   let lastStatus: SimulationStatus | null = null;
   let lastFile: File | null = null;
   let mimeType = "";
@@ -71,6 +75,7 @@ export function createMovieCaptureController(
   captureCanvas.width = MOVIE_CAPTURE_WIDTH;
   captureCanvas.height = MOVIE_CAPTURE_HEIGHT;
   shareButton.hidden = true;
+  manualButton.disabled = true;
 
   supportedMimeType = detectSupportedMimeType();
   if (!canCapture()) {
@@ -86,6 +91,10 @@ export function createMovieCaptureController(
     } else {
       stop();
     }
+  });
+
+  manualButton.addEventListener("click", () => {
+    triggerManualCapture();
   });
 
   shareButton.addEventListener("click", async () => {
@@ -117,9 +126,13 @@ export function createMovieCaptureController(
 
     if (state === "triggered") {
       const remainingMs = Math.max(0, postRollUntil - performance.now());
+      const label =
+        triggerKind === "manual"
+          ? "Manual movie capture"
+          : "Replication detected";
       setStatus(
         "triggered",
-        `Replication detected at epoch ${detection?.epoch.toLocaleString()}; saving in ${Math.ceil(remainingMs / 1000)}s.`
+        `${label} at epoch ${detection?.epoch.toLocaleString()}; saving in ${Math.ceil(remainingMs / 1000)}s.`
       );
       if (remainingMs <= 0) {
         stopAndSave();
@@ -134,6 +147,7 @@ export function createMovieCaptureController(
   function resetRun(): void {
     detector.reset();
     detection = null;
+    triggerKind = null;
     postRollUntil = 0;
     buffer.clear({ preserveHeader: Boolean(recorder && recorder.state !== "inactive") });
     if (state === "triggered" || state === "saving") {
@@ -155,6 +169,7 @@ export function createMovieCaptureController(
 
     detector.reset();
     detection = null;
+    triggerKind = null;
     lastFile = null;
     shareButton.hidden = true;
     buffer.clear();
@@ -186,6 +201,7 @@ export function createMovieCaptureController(
     const shouldStopRecorder = recorder && recorder.state !== "inactive";
     state = "off";
     detection = null;
+    triggerKind = null;
     postRollUntil = 0;
     enabledInput.checked = false;
     buffer.clear();
@@ -198,14 +214,37 @@ export function createMovieCaptureController(
     setStatus("off", "Movie capture off.");
   }
 
-  function trigger(result: ReplicationDetection): void {
+  function trigger(
+    result: ReplicationDetection,
+    kind: TriggerKind = "replication"
+  ): void {
     state = "triggered";
     detection = result;
+    triggerKind = kind;
     postRollUntil = performance.now() + MOVIE_POST_ROLL_MS;
+    const label =
+      kind === "manual" ? "Manual movie capture" : "Replication detected";
     setStatus(
       "triggered",
-      `Replication detected at epoch ${result.epoch.toLocaleString()}; recording 60 more seconds.`
+      `${label} at epoch ${result.epoch.toLocaleString()}; recording 60 more seconds.`
     );
+  }
+
+  function triggerManualCapture(): void {
+    if (!canCapture() || !captureContext) {
+      setStatus("error", "Movie capture unavailable in this browser.");
+      return;
+    }
+    if (state === "triggered" || state === "saving") {
+      return;
+    }
+    if (state !== "watching") {
+      enabledInput.checked = true;
+      start();
+    }
+    if (state === "watching") {
+      trigger(manualDetection(), "manual");
+    }
   }
 
   function stopAndSave(): void {
@@ -213,7 +252,10 @@ export function createMovieCaptureController(
       return;
     }
     state = "saving";
-    setStatus("saving", "Saving replication movie...");
+    setStatus(
+      "saving",
+      triggerKind === "manual" ? "Saving movie..." : "Saving replication movie..."
+    );
     recorder.requestData();
     recorder.stop();
   }
@@ -232,12 +274,14 @@ export function createMovieCaptureController(
 
   async function finalizeCapture(): Promise<void> {
     const shouldSave = state === "saving";
+    const savedTriggerKind = triggerKind;
     stopDrawLoop();
     stopStream();
     recorder = null;
 
     if (!shouldSave) {
       buffer.clear();
+      triggerKind = null;
       return;
     }
 
@@ -249,15 +293,18 @@ export function createMovieCaptureController(
         : rawVideo;
       const extension = videoExtension(mimeType);
       const epoch = detection?.epoch ?? lastStatus?.epoch ?? 0;
-      const filename = `bff-replication-epoch-${epoch}.${extension}`;
+      const filenamePrefix =
+        savedTriggerKind === "manual" ? "bff-movie" : "bff-replication";
+      const filename = `${filenamePrefix}-epoch-${epoch}.${extension}`;
       lastFile = new File([video], filename, { type: video.type || mimeType });
       downloadBlob(lastFile, filename);
       shareButton.hidden = !navigator.canShare?.({ files: [lastFile] });
       enabledInput.checked = false;
       buffer.clear();
+      triggerKind = null;
       setStatus(
         "saved",
-        `Saved WebM replication movie at epoch ${epoch.toLocaleString()}.`
+        `Saved WebM ${savedTriggerKind === "manual" ? "movie" : "replication movie"} at epoch ${epoch.toLocaleString()}.`
       );
     } catch {
       fail("Movie capture failed while saving.");
@@ -296,6 +343,7 @@ export function createMovieCaptureController(
     state = "error";
     enabledInput.checked = false;
     enabledInput.disabled = !canCapture();
+    manualButton.disabled = !canCapture();
     stopDrawLoop();
     stopStream();
     if (recorder && recorder.state !== "inactive") {
@@ -319,6 +367,8 @@ export function createMovieCaptureController(
   function setStatus(nextState: CaptureState, text: string): void {
     state = nextState;
     status.textContent = text;
+    manualButton.disabled =
+      !canCapture() || nextState === "triggered" || nextState === "saving";
     status.classList.toggle("active", nextState === "watching");
     status.classList.toggle("triggered", nextState === "triggered");
     status.classList.toggle("saving", nextState === "saving");
@@ -341,6 +391,17 @@ export function createMovieCaptureController(
     resetRun,
     stop
   };
+
+  function manualDetection(): ReplicationDetection {
+    return {
+      detected: true,
+      confidence: 1,
+      epoch: lastStatus?.epoch ?? 0,
+      reason: "manual movie capture",
+      metric: lastStatus?.latestMetric ?? null,
+      topProgram: lastStatus?.topPrograms[0] ?? null
+    };
+  }
 }
 
 function detectSupportedMimeType(): string {

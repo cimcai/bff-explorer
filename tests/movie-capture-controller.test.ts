@@ -27,15 +27,35 @@ describe("movie capture controller", () => {
 
     expect(statusElement.textContent).toContain("Replication detected");
   });
+
+  it("lets the user manually mark the current epoch for movie saving", () => {
+    installBrowserMediaFakes();
+    const { controller, enabledInput, manualButton, statusElement } =
+      setupController();
+
+    controller.update(status(42, metric(42, 0.2), [program("candidate", 12)]));
+    manualButton.emit("click");
+
+    expect(enabledInput.checked).toBe(true);
+    expect(manualButton.disabled).toBe(true);
+    expect(statusElement.textContent).toContain(
+      "Manual movie capture at epoch 42"
+    );
+  });
 });
 
 interface FakeInput extends HTMLInputElement {
   emit(type: string): void;
 }
 
+interface FakeButton extends HTMLButtonElement {
+  emit(type: string): void;
+}
+
 function setupController(): {
   controller: ReturnType<typeof createMovieCaptureController>;
   enabledInput: FakeInput;
+  manualButton: FakeButton;
   statusElement: HTMLParagraphElement;
 } {
   const sourceCanvas = {} as HTMLCanvasElement;
@@ -53,11 +73,9 @@ function setupController(): {
     })
   } as unknown as HTMLCanvasElement;
   const enabledInput = fakeInput();
+  const manualButton = fakeButton();
   const statusElement = fakeStatusElement();
-  const shareButton = {
-    hidden: true,
-    addEventListener: () => undefined
-  } as unknown as HTMLButtonElement;
+  const shareButton = fakeButton();
 
   return {
     controller: createMovieCaptureController({
@@ -66,10 +84,12 @@ function setupController(): {
         captureCanvas,
         enabledInput,
         status: statusElement,
+        manualButton,
         shareButton
       }
     }),
     enabledInput,
+    manualButton,
     statusElement
   };
 }
@@ -102,10 +122,19 @@ function installBrowserMediaFakes(): void {
 }
 
 function fakeInput(): FakeInput {
+  return fakeEventTarget({ checked: false, disabled: false }) as FakeInput;
+}
+
+function fakeButton(): FakeButton {
+  return fakeEventTarget({ disabled: false, hidden: false }) as FakeButton;
+}
+
+function fakeEventTarget<T extends object>(
+  props: T
+): T & { emit(type: string): void } {
   const listeners = new Map<string, Array<EventListenerOrEventListenerObject>>();
   return {
-    checked: false,
-    disabled: false,
+    ...props,
     addEventListener: (
       type: string,
       listener: EventListenerOrEventListenerObject
@@ -121,7 +150,7 @@ function fakeInput(): FakeInput {
         }
       }
     }
-  } as FakeInput;
+  };
 }
 
 function fakeStatusElement(): HTMLParagraphElement {

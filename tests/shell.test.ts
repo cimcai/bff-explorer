@@ -15,7 +15,7 @@ describe("app shell markup", () => {
     expect(html).toContain('data-collapsible-section="replicator"');
     expect(html).toContain('data-collapsible-section="movie-capture"');
     expect(html).toContain("Movie Capture");
-    expect(html).toContain("browser-playable WebM movie");
+    expect(html).toContain("manually mark the current frame");
     expect(html).not.toContain("default is zero");
     expect(html).toContain('id="timeBudgetMs"');
     expect(html).toContain(`title="Default: ${config.timeBudgetMs}"`);
@@ -36,6 +36,7 @@ describe("app shell markup", () => {
     expect(html).not.toContain(">Hide</button>");
     expect(html).not.toContain('button class="collapse-toggle"');
     expect(html).toContain('id="autoMovieCapture"');
+    expect(html).toContain('id="manualMovieCapture"');
     expect(html).toContain('id="movieCaptureStatus"');
     expect(html).toContain('id="movieCaptureCanvas"');
     expect(html).not.toContain(">Default</button>");
