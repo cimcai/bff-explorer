@@ -139,7 +139,12 @@ await page.waitForTimeout(150);
 
 await page.locator('[data-collapsible-section="emergence"] [data-collapse-toggle]').click();
 await page.locator("#chartMetric").selectOption("dominantProgramFraction");
+await page.locator("#chartWindow").selectOption("transition");
+await page.locator("#chartScale").selectOption("detail");
 const selectedMetric = await page.locator("#chartMetricLabel").textContent();
+const selectedChartWindow = await page.locator("#chartWindow").inputValue();
+const selectedChartScale = await page.locator("#chartScale").inputValue();
+const chartReadout = await page.locator("#chartReadout").textContent();
 const chartEquation = await page.locator("#chartEquation").getAttribute("aria-label");
 const chartCommentary = await page.locator("#chartCommentary").textContent();
 const chartEquationRendered = await page.locator("#chartEquation .katex").count();
@@ -218,6 +223,9 @@ const result = {
   zoomReadoutVisible,
   fullscreenState,
   selectedMetric,
+  selectedChartWindow,
+  selectedChartScale,
+  chartReadout,
   chartEquation,
   chartCommentary,
   chartEquationRendered,
@@ -318,6 +326,9 @@ if (
   (!fullscreenState.native && !fullscreenState.fallback) ||
   fullscreenState.button !== "Exit fullscreen" ||
   selectedMetric !== "Dominant program" ||
+  selectedChartWindow !== "transition" ||
+  selectedChartScale !== "detail" ||
+  !chartReadout?.includes("samples") ||
   !chartEquation?.includes("number_of_cells_with_the_most_common_program") ||
   !chartCommentary?.includes("Each cell contains one 64-byte program") ||
   chartEquationRendered < 1 ||

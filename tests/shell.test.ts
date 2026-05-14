@@ -67,6 +67,11 @@ describe("app shell markup", () => {
     expect(html).toContain('id="loadTopProgramA"');
     expect(html).toContain('id="chartEquation"');
     expect(html).toContain('id="chartCommentary"');
+    expect(html).toContain('id="chartWindow"');
+    expect(html).toContain('id="chartScale"');
+    expect(html).toContain('id="chartReadout"');
+    expect(html).toContain(">Transition</option>");
+    expect(html).toContain(">Detail</option>");
     expect(html).toContain("katex");
     expect(html).toContain("https://arxiv.org/abs/2406.19108");
     expect(html).toContain("https://www.brainfuck.org/brainfuck.html");

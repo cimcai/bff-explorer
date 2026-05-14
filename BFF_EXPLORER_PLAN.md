@@ -28,6 +28,10 @@ changes that preserve the simulator's substrate fidelity.
 - Movie capture intentionally records WebM. Do not prefer MediaRecorder MP4
   until there is a real MP4 muxing path; rolling pre-roll capture splices old
   chunks, and MP4 fragments produced broken QuickTime files.
+- Emergence plots stay lightweight and custom. They should prioritize visible
+  phase-transition diagnosis: metric selection, all/recent/transition windows,
+  auto/detail/full y-scales, hover readouts, and detected or estimated
+  transition markers. Keep the plot visually primary above formula prose.
 - Runtime safety is product behavior, not just a test concern. Keep foreground
   worker duty cycle bounded, throttle hidden tabs to a tiny maintenance loop,
   stop movie capture when the tab is hidden, and retain checkpoints/movie

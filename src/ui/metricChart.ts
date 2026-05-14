@@ -8,6 +8,9 @@ export type ChartMetricKey =
   | "activeInstructionFraction"
   | "uniqueProgramFraction";
 
+export type ChartWindowMode = "all" | "recent" | "transition";
+export type ChartScaleMode = "auto" | "detail" | "full";
+
 export interface ChartMetricDefinition {
   label: string;
   description: string;
@@ -18,7 +21,53 @@ export interface ChartMetricDefinition {
   yDomain: readonly [number, number];
 }
 
+export interface ChartSelectOption<T extends string> {
+  value: T;
+  label: string;
+}
+
+export interface ChartViewOptions {
+  windowMode?: ChartWindowMode;
+  scaleMode?: ChartScaleMode;
+  hoverIndex?: number | null;
+}
+
+export interface ChartHoverPoint {
+  index: number;
+  sample: MetricSnapshot;
+  x: number;
+  y: number;
+  valueText: string;
+  transitionLabel: string | null;
+}
+
+export interface ChartViewSummary {
+  sampleCount: number;
+  startEpoch: number | null;
+  endEpoch: number | null;
+  transitionEpoch: number | null;
+  transitionLabel: string | null;
+}
+
 const MAX_STRUCTURE_SCORE = 8 + 0.25 * (256 / 10 - 1);
+const RECENT_SAMPLE_COUNT = 80;
+const TRANSITION_WINDOW_BEFORE = 32;
+const TRANSITION_WINDOW_AFTER = 64;
+const ESTIMATED_TRANSITION_MIN_GAIN = 0.08;
+
+export const CHART_WINDOW_OPTIONS: readonly ChartSelectOption<ChartWindowMode>[] =
+  [
+    { value: "all", label: "All" },
+    { value: "recent", label: "Recent" },
+    { value: "transition", label: "Transition" }
+  ];
+
+export const CHART_SCALE_OPTIONS: readonly ChartSelectOption<ChartScaleMode>[] =
+  [
+    { value: "auto", label: "Auto" },
+    { value: "detail", label: "Detail" },
+    { value: "full", label: "Full" }
+  ];
 
 export const CHART_METRICS: Record<ChartMetricKey, ChartMetricDefinition> = {
   structureScore: {
@@ -102,9 +151,11 @@ export function formatChartMetricValue(
 export function drawMetricChart(
   canvas: HTMLCanvasElement,
   history: readonly MetricSnapshot[],
-  metricKey: ChartMetricKey
+  metricKey: ChartMetricKey,
+  options: ChartViewOptions = {}
 ): void {
-  const size = prepareChartCanvas(canvas);
+  const state = prepareChartState(canvas, history, metricKey, options);
+  const { size, plot, plotWidth, view } = state;
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     return;
@@ -115,42 +166,35 @@ export function drawMetricChart(
 
   const width = size.width;
   const height = size.height;
-  const plot = {
-    left: 58,
-    right: width - 14,
-    top: 24,
-    bottom: height - 34
-  };
-  const plotWidth = Math.max(1, plot.right - plot.left);
-  const plotHeight = Math.max(1, plot.bottom - plot.top);
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = "#fbfcfa";
   ctx.fillRect(0, 0, width, height);
 
-  const domain = metricDomain(metricKey, history);
-  drawChartFrame(ctx, plot, metricKey, history, domain);
+  drawChartFrame(ctx, state);
 
-  if (history.length === 0) {
+  if (view.samples.length === 0) {
     return;
   }
 
-  if (history.length === 1) {
-    const y = metricY(history[0][metricKey], domain, plot, plotHeight);
+  drawTransitionMarker(ctx, state);
+
+  if (view.samples.length === 1) {
+    const y = metricY(view.samples[0][metricKey], state);
     ctx.fillStyle = "#256c73";
     ctx.beginPath();
-    ctx.arc(plot.left, y, 3, 0, Math.PI * 2);
+    ctx.arc(plot.left + plotWidth / 2, y, 4, 0, Math.PI * 2);
     ctx.fill();
     return;
   }
 
-  ctx.strokeStyle = "#256c73";
-  ctx.lineWidth = 2.25;
+  ctx.strokeStyle = "#2f7880";
+  ctx.lineWidth = 2.75;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   ctx.beginPath();
-  history.forEach((sample, index) => {
-    const x = plot.left + (index / (history.length - 1)) * plotWidth;
-    const y = metricY(sample[metricKey], domain, plot, plotHeight);
+  view.samples.forEach((sample, index) => {
+    const x = sampleX(sample, index, state);
+    const y = metricY(sample[metricKey], state);
     if (index === 0) {
       ctx.moveTo(x, y);
     } else {
@@ -158,6 +202,93 @@ export function drawMetricChart(
     }
   });
   ctx.stroke();
+
+  if (view.samples.length <= 32) {
+    ctx.fillStyle = "#2f7880";
+    view.samples.forEach((sample, index) => {
+      ctx.beginPath();
+      ctx.arc(
+        sampleX(sample, index, state),
+        metricY(sample[metricKey], state),
+        3,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    });
+  }
+
+  drawHoverPoint(ctx, state);
+}
+
+export function metricChartHitTest(
+  canvas: HTMLCanvasElement,
+  history: readonly MetricSnapshot[],
+  metricKey: ChartMetricKey,
+  options: ChartViewOptions,
+  clientX: number,
+  clientY: number
+): ChartHoverPoint | null {
+  const state = prepareChartState(canvas, history, metricKey, options);
+  if (state.view.samples.length === 0) {
+    return null;
+  }
+
+  const rect =
+    typeof canvas.getBoundingClientRect === "function"
+      ? canvas.getBoundingClientRect()
+      : null;
+  if (!rect) {
+    return null;
+  }
+
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+  if (
+    x < state.plot.left ||
+    x > state.plot.right ||
+    y < state.plot.top ||
+    y > state.plot.bottom
+  ) {
+    return null;
+  }
+
+  let nearestViewIndex = 0;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  state.view.samples.forEach((sample, index) => {
+    const sampleDistance = Math.abs(sampleX(sample, index, state) - x);
+    if (sampleDistance < nearestDistance) {
+      nearestDistance = sampleDistance;
+      nearestViewIndex = index;
+    }
+  });
+
+  const sample = state.view.samples[nearestViewIndex];
+  const index = state.view.startIndex + nearestViewIndex;
+  return {
+    index,
+    sample,
+    x: sampleX(sample, nearestViewIndex, state),
+    y: metricY(sample[metricKey], state),
+    valueText: CHART_METRICS[metricKey].format(sample[metricKey]),
+    transitionLabel: transitionLabelForIndex(state.view.transition, index)
+  };
+}
+
+export function summarizeChartView(
+  history: readonly MetricSnapshot[],
+  options: ChartViewOptions = {}
+): ChartViewSummary {
+  const view = visibleMetricHistory(history, options.windowMode ?? "all");
+  const transitionEpoch = visibleTransitionEpoch(view, history);
+  return {
+    sampleCount: view.samples.length,
+    startEpoch: view.samples[0]?.epoch ?? null,
+    endEpoch: view.samples.at(-1)?.epoch ?? null,
+    transitionEpoch,
+    transitionLabel:
+      transitionEpoch === null ? null : view.transition?.label ?? null
+  };
 }
 
 interface ChartPlotArea {
@@ -171,6 +302,60 @@ interface PreparedCanvasSize {
   width: number;
   height: number;
   pixelRatio: number;
+}
+
+interface ChartView {
+  samples: readonly MetricSnapshot[];
+  startIndex: number;
+  transition: TransitionFocus | null;
+}
+
+interface TransitionFocus {
+  index: number;
+  kind: "detected" | "estimated";
+  label: "transition" | "steepest rise";
+}
+
+interface PreparedChartState {
+  size: PreparedCanvasSize;
+  plot: ChartPlotArea;
+  plotWidth: number;
+  plotHeight: number;
+  metricKey: ChartMetricKey;
+  domain: MetricDomain;
+  scaleMode: ChartScaleMode;
+  view: ChartView;
+  hoverIndex: number | null;
+}
+
+function prepareChartState(
+  canvas: HTMLCanvasElement,
+  history: readonly MetricSnapshot[],
+  metricKey: ChartMetricKey,
+  options: ChartViewOptions
+): PreparedChartState {
+  const size = prepareChartCanvas(canvas);
+  const plot = {
+    left: 62,
+    right: size.width - 18,
+    top: 30,
+    bottom: size.height - 42
+  };
+  const plotWidth = Math.max(1, plot.right - plot.left);
+  const plotHeight = Math.max(1, plot.bottom - plot.top);
+  const view = visibleMetricHistory(history, options.windowMode ?? "all");
+  const scaleMode = options.scaleMode ?? "auto";
+  return {
+    size,
+    plot,
+    plotWidth,
+    plotHeight,
+    metricKey,
+    domain: metricDomain(metricKey, view.samples, scaleMode),
+    scaleMode,
+    view,
+    hoverIndex: options.hoverIndex ?? null
+  };
 }
 
 function prepareChartCanvas(canvas: HTMLCanvasElement): PreparedCanvasSize {
@@ -209,21 +394,24 @@ function prepareChartCanvas(canvas: HTMLCanvasElement): PreparedCanvasSize {
 
 function drawChartFrame(
   ctx: CanvasRenderingContext2D,
-  plot: ChartPlotArea,
-  metricKey: ChartMetricKey,
-  history: readonly MetricSnapshot[],
-  domain: MetricDomain
+  state: PreparedChartState
 ): void {
-  const plotWidth = plot.right - plot.left;
-  const plotHeight = plot.bottom - plot.top;
+  const { plot, plotWidth, metricKey, domain, view } = state;
   ctx.strokeStyle = "#e1e8e4";
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i += 1) {
     const tickValue = domain.max - (i / 4) * (domain.max - domain.min);
-    const y = metricY(tickValue, domain, plot, plotHeight);
+    const y = metricY(tickValue, state);
     ctx.beginPath();
     ctx.moveTo(plot.left, y + 0.5);
     ctx.lineTo(plot.right, y + 0.5);
+    ctx.stroke();
+  }
+  for (let i = 0; i <= 4; i += 1) {
+    const x = plot.left + (i / 4) * plotWidth;
+    ctx.beginPath();
+    ctx.moveTo(x + 0.5, plot.top);
+    ctx.lineTo(x + 0.5, plot.bottom);
     ctx.stroke();
   }
   ctx.beginPath();
@@ -237,24 +425,26 @@ function drawChartFrame(
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
   ctx.fillText(CHART_METRICS[metricKey].label, plot.left, 13);
+  ctx.textAlign = "right";
+  ctx.fillText(scaleLabel(state.scaleMode), plot.right, 13);
   ctx.textAlign = "center";
   ctx.fillText("Epoch", plot.left + plotWidth / 2, plot.bottom + 24);
 
   ctx.textAlign = "right";
-  for (let i = 0; i <= 4; i += 2) {
+  for (let i = 0; i <= 4; i += 1) {
     const tickValue = domain.max - (i / 4) * (domain.max - domain.min);
-    const y = metricY(tickValue, domain, plot, plotHeight);
+    const y = metricY(tickValue, state);
     ctx.fillText(axisValue(tickValue, metricKey), plot.left - 8, y);
   }
 
-  if (history.length === 0) {
+  if (view.samples.length === 0) {
     return;
   }
   ctx.textAlign = "left";
-  ctx.fillText(String(history[0].epoch), plot.left, plot.bottom + 10);
+  ctx.fillText(String(view.samples[0].epoch), plot.left, plot.bottom + 10);
   ctx.textAlign = "right";
   ctx.fillText(
-    String(history[history.length - 1].epoch),
+    String(view.samples[view.samples.length - 1].epoch),
     plot.left + plotWidth,
     plot.bottom + 10
   );
@@ -267,14 +457,25 @@ interface MetricDomain {
 
 function metricDomain(
   metricKey: ChartMetricKey,
-  history: readonly MetricSnapshot[]
+  history: readonly MetricSnapshot[],
+  scaleMode: ChartScaleMode
 ): MetricDomain {
   const values = history
     .map((sample) => sample[metricKey])
     .filter((value) => Number.isFinite(value));
 
   if (values.length === 0) {
-    return fallbackDomain(metricKey);
+    return scaleMode === "full"
+      ? fullDomain(metricKey)
+      : fallbackDomain(metricKey);
+  }
+
+  if (scaleMode === "full") {
+    return fullDomain(metricKey);
+  }
+
+  if (scaleMode === "detail") {
+    return detailDomain(metricKey, values);
   }
 
   if (metricKey === "phaseTransitionScore") {
@@ -311,6 +512,49 @@ function metricDomain(
   };
 }
 
+function detailDomain(
+  metricKey: ChartMetricKey,
+  values: readonly number[]
+): MetricDomain {
+  const fixed = fullDomain(metricKey);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const minimumRange =
+    metricKey === "structureScore"
+      ? 0.05
+      : metricKey === "phaseTransitionScore"
+        ? 0.05
+        : 0.005;
+  const rawRange = Math.max(maxValue - minValue, minimumRange);
+  const padding = rawRange * 0.18;
+  let min = minValue - padding;
+  let max = maxValue + padding;
+
+  if (metricKey !== "phaseTransitionScore") {
+    min = Math.max(0, min);
+  }
+  min = Math.max(fixed.min, min);
+  max = Math.min(fixed.max, max);
+
+  if (max - min < minimumRange) {
+    const midpoint = (min + max) / 2;
+    min = Math.max(fixed.min, midpoint - minimumRange / 2);
+    max = Math.min(fixed.max, midpoint + minimumRange / 2);
+  }
+
+  if (max <= min) {
+    return fallbackDomain(metricKey);
+  }
+  return { min, max };
+}
+
+function fullDomain(metricKey: ChartMetricKey): MetricDomain {
+  return {
+    min: CHART_METRICS[metricKey].yDomain[0],
+    max: CHART_METRICS[metricKey].yDomain[1]
+  };
+}
+
 function fallbackDomain(metricKey: ChartMetricKey): MetricDomain {
   if (metricKey === "phaseTransitionScore") {
     return {
@@ -327,6 +571,109 @@ function fallbackDomain(metricKey: ChartMetricKey): MetricDomain {
   return {
     min: CHART_METRICS[metricKey].yDomain[0],
     max: CHART_METRICS[metricKey].yDomain[1]
+  };
+}
+
+function visibleMetricHistory(
+  history: readonly MetricSnapshot[],
+  windowMode: ChartWindowMode
+): ChartView {
+  const transition = findTransitionFocus(history);
+  if (history.length === 0) {
+    return { samples: [], startIndex: 0, transition };
+  }
+
+  if (windowMode === "recent" && history.length > RECENT_SAMPLE_COUNT) {
+    const startIndex = history.length - RECENT_SAMPLE_COUNT;
+    return {
+      samples: history.slice(startIndex),
+      startIndex,
+      transition
+    };
+  }
+
+  if (windowMode === "transition" && transition) {
+    const startIndex = Math.max(0, transition.index - TRANSITION_WINDOW_BEFORE);
+    const endIndex = Math.min(
+      history.length,
+      transition.index + TRANSITION_WINDOW_AFTER + 1
+    );
+    return {
+      samples: history.slice(startIndex, endIndex),
+      startIndex,
+      transition
+    };
+  }
+
+  return { samples: history, startIndex: 0, transition };
+}
+
+function visibleTransitionEpoch(
+  view: ChartView,
+  history: readonly MetricSnapshot[]
+): number | null {
+  if (
+    !view.transition ||
+    view.transition.index < view.startIndex ||
+    view.transition.index >= view.startIndex + view.samples.length
+  ) {
+    return null;
+  }
+  return history[view.transition.index]?.epoch ?? null;
+}
+
+function findTransitionFocus(
+  history: readonly MetricSnapshot[]
+): TransitionFocus | null {
+  const detectedIndex = history.findIndex(
+    (sample) => sample.phaseTransitionDetected
+  );
+  if (detectedIndex >= 0) {
+    return {
+      index: detectedIndex,
+      kind: "detected",
+      label: "transition"
+    };
+  }
+
+  let bestIndex = -1;
+  let bestGain = 0;
+  for (let index = 1; index < history.length; index += 1) {
+    const gain =
+      history[index].structureScore - history[index - 1].structureScore;
+    if (gain > bestGain) {
+      bestGain = gain;
+      bestIndex = index;
+    }
+  }
+
+  if (bestIndex < 0) {
+    return null;
+  }
+
+  const baselineSampleCount = Math.min(
+    8,
+    Math.max(1, Math.floor(history.length / 3))
+  );
+  const baselineValues = history
+    .slice(0, baselineSampleCount)
+    .map((sample) => sample.structureScore);
+  const baselineRange =
+    baselineValues.length > 0
+      ? Math.max(...baselineValues) - Math.min(...baselineValues)
+      : 0;
+  const threshold = Math.max(
+    ESTIMATED_TRANSITION_MIN_GAIN,
+    baselineRange * 4
+  );
+  if (bestGain < threshold) {
+    return null;
+  }
+
+  return {
+    index: bestIndex,
+    kind: "estimated",
+    label: "steepest rise"
   };
 }
 
@@ -347,15 +694,114 @@ function niceCeil(value: number): number {
   return nice * magnitude;
 }
 
-function metricY(
-  value: number,
-  domain: MetricDomain,
-  plot: ChartPlotArea,
-  plotHeight: number
+function metricY(value: number, state: PreparedChartState): number {
+  const range = state.domain.max - state.domain.min || 1;
+  const normalized = clamp((value - state.domain.min) / range, 0, 1);
+  return state.plot.bottom - normalized * state.plotHeight;
+}
+
+function sampleX(
+  sample: MetricSnapshot,
+  viewIndex: number,
+  state: PreparedChartState
 ): number {
-  const range = domain.max - domain.min || 1;
-  const normalized = clamp((value - domain.min) / range, 0, 1);
-  return plot.bottom - normalized * plotHeight;
+  if (state.view.samples.length === 1) {
+    return state.plot.left + state.plotWidth / 2;
+  }
+  const firstEpoch = state.view.samples[0].epoch;
+  const lastEpoch = state.view.samples[state.view.samples.length - 1].epoch;
+  const epochSpan = lastEpoch - firstEpoch;
+  if (epochSpan <= 0) {
+    return (
+      state.plot.left +
+      (viewIndex / Math.max(1, state.view.samples.length - 1)) *
+        state.plotWidth
+    );
+  }
+  return (
+    state.plot.left +
+    ((sample.epoch - firstEpoch) / epochSpan) * state.plotWidth
+  );
+}
+
+function drawTransitionMarker(
+  ctx: CanvasRenderingContext2D,
+  state: PreparedChartState
+): void {
+  const transition = state.view.transition;
+  if (
+    !transition ||
+    transition.index < state.view.startIndex ||
+    transition.index >= state.view.startIndex + state.view.samples.length
+  ) {
+    return;
+  }
+
+  const viewIndex = transition.index - state.view.startIndex;
+  const sample = state.view.samples[viewIndex];
+  const x = sampleX(sample, viewIndex, state);
+  ctx.fillStyle =
+    transition.kind === "detected"
+      ? "rgba(198, 134, 24, 0.16)"
+      : "rgba(47, 120, 128, 0.14)";
+  ctx.fillRect(x - 2, state.plot.top, 4, state.plotHeight);
+  ctx.fillStyle = transition.kind === "detected" ? "#8a5b0c" : "#256c73";
+  ctx.font = "12px system-ui, sans-serif";
+  ctx.textAlign = x < state.plot.left + state.plotWidth / 2 ? "left" : "right";
+  ctx.textBaseline = "top";
+  ctx.fillText(
+    transition.label,
+    x < state.plot.left + state.plotWidth / 2 ? x + 6 : x - 6,
+    state.plot.top + 8
+  );
+}
+
+function drawHoverPoint(
+  ctx: CanvasRenderingContext2D,
+  state: PreparedChartState
+): void {
+  if (state.hoverIndex === null) {
+    return;
+  }
+  const viewIndex = state.hoverIndex - state.view.startIndex;
+  if (viewIndex < 0 || viewIndex >= state.view.samples.length) {
+    return;
+  }
+  const sample = state.view.samples[viewIndex];
+  const x = sampleX(sample, viewIndex, state);
+  const y = metricY(sample[state.metricKey], state);
+  ctx.strokeStyle = "rgba(21, 31, 29, 0.26)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x + 0.5, state.plot.top);
+  ctx.lineTo(x + 0.5, state.plot.bottom);
+  ctx.stroke();
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(x, y, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#1d5960";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x, y, 5, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function transitionLabelForIndex(
+  transition: TransitionFocus | null,
+  index: number
+): string | null {
+  return transition && transition.index === index ? transition.label : null;
+}
+
+function scaleLabel(scaleMode: ChartScaleMode): string {
+  if (scaleMode === "detail") {
+    return "detail scale";
+  }
+  if (scaleMode === "full") {
+    return "full scale";
+  }
+  return "auto scale";
 }
 
 function axisValue(value: number, metricKey: ChartMetricKey): string {

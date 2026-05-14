@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   CHART_METRICS,
+  CHART_SCALE_OPTIONS,
+  CHART_WINDOW_OPTIONS,
   drawMetricChart,
   formatChartMetricValue,
-  renderChartMetricEquation
+  renderChartMetricEquation,
+  summarizeChartView
 } from "../src/ui/metricChart";
 import type { MetricSnapshot } from "../src/simulation/metrics";
 
@@ -62,6 +65,19 @@ describe("metric chart definitions", () => {
       "dominantProgramFraction",
       "activeInstructionFraction",
       "uniqueProgramFraction"
+    ]);
+  });
+
+  it("defines compact interaction controls for chart window and scaling", () => {
+    expect(CHART_WINDOW_OPTIONS.map((option) => option.value)).toEqual([
+      "all",
+      "recent",
+      "transition"
+    ]);
+    expect(CHART_SCALE_OPTIONS.map((option) => option.value)).toEqual([
+      "auto",
+      "detail",
+      "full"
     ]);
   });
 
@@ -149,7 +165,7 @@ describe("metric chart definitions", () => {
     expect(canvas.height).toBe(260);
   });
 
-  it("does not draw vertical phase-transition markers", () => {
+  it("draws an estimated transition marker when structure rises sharply", () => {
     const fillRects: Array<{ x: number; y: number; width: number; height: number }> = [];
     const canvas = mockCanvas([], fillRects);
 
@@ -157,12 +173,32 @@ describe("metric chart definitions", () => {
       canvas,
       [
         { ...metric, epoch: 0, structureScore: 0.1 },
-        { ...metric, epoch: 10, structureScore: 0.9, phaseTransitionDetected: true }
+        { ...metric, epoch: 10, structureScore: 0.9 }
       ],
       "structureScore"
     );
 
-    expect(fillRects).toEqual([{ x: 0, y: 0, width: 920, height: 220 }]);
+    expect(fillRects.length).toBeGreaterThan(1);
+    expect(fillRects[0]).toEqual({ x: 0, y: 0, width: 920, height: 220 });
+    expect(fillRects.some((rect) => rect.width === 4)).toBe(true);
+  });
+
+  it("summarizes the transition-focused view", () => {
+    const history = [
+      { ...metric, epoch: 0, structureScore: 0.01 },
+      { ...metric, epoch: 10, structureScore: 0.02 },
+      { ...metric, epoch: 20, structureScore: 0.7 },
+      { ...metric, epoch: 30, structureScore: 0.9 }
+    ];
+
+    expect(summarizeChartView(history, { windowMode: "transition" }))
+      .toMatchObject({
+        sampleCount: 4,
+        startEpoch: 0,
+        endEpoch: 30,
+        transitionEpoch: 20,
+        transitionLabel: "steepest rise"
+      });
   });
 });
 

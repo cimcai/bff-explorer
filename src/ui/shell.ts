@@ -5,7 +5,12 @@ import {
   REPLICATOR_PRESETS,
   replicatorPresetById
 } from "../simulation/replicatorPresets";
-import { CHART_METRICS, renderChartMetricEquation } from "./metricChart";
+import {
+  CHART_METRICS,
+  CHART_SCALE_OPTIONS,
+  CHART_WINDOW_OPTIONS,
+  renderChartMetricEquation
+} from "./metricChart";
 
 export function renderAppShell(
   config: SimulationConfig,
@@ -82,28 +87,49 @@ export function renderAppShell(
           ${sectionHead("Emergence Signal", CHART_METRICS.structureScore.description, true, "chartDescription")}
 
           <div class="section-body" data-collapse-body>
-            <label class="metric-select-label">
-              <span>Metric</span>
-              <select id="chartMetric">
-                ${Object.entries(CHART_METRICS)
-                  .map(
-                    ([key, option]) =>
-                      `<option value="${key}">${option.label}</option>`
-                  )
-                  .join("")}
-              </select>
-            </label>
             <section class="metric-card">
               <div class="metric-card-head">
                 <span id="chartMetricLabel">Structure score</span>
                 <span id="phaseBadge" class="phase-badge">baseline</span>
               </div>
               <strong id="chartMetricValue">0.000</strong>
+              <div class="chart-toolbar" aria-label="Chart controls">
+                <label>
+                  <span>Metric</span>
+                  <select id="chartMetric">
+                    ${Object.entries(CHART_METRICS)
+                      .map(
+                        ([key, option]) =>
+                          `<option value="${key}">${option.label}</option>`
+                      )
+                      .join("")}
+                  </select>
+                </label>
+                <label>
+                  <span>Window</span>
+                  <select id="chartWindow">
+                    ${CHART_WINDOW_OPTIONS.map(
+                      (option) =>
+                        `<option value="${option.value}">${option.label}</option>`
+                    ).join("")}
+                  </select>
+                </label>
+                <label>
+                  <span>Y scale</span>
+                  <select id="chartScale">
+                    ${CHART_SCALE_OPTIONS.map(
+                      (option) =>
+                        `<option value="${option.value}">${option.label}</option>`
+                    ).join("")}
+                  </select>
+                </label>
+              </div>
+              <div id="chartReadout" class="chart-readout" aria-live="polite">Waiting for metric samples.</div>
+              <canvas id="metricChart" width="920" height="310" aria-label="Selected emergence metric over time"></canvas>
               <div class="metric-exposition" aria-live="polite">
                 <div id="chartEquation" aria-label="${escapeAttribute(CHART_METRICS.structureScore.equation)}">${renderChartMetricEquation("structureScore")}</div>
                 <p id="chartCommentary">${CHART_METRICS.structureScore.commentary}</p>
               </div>
-              <canvas id="metricChart" width="920" height="220" aria-label="Selected emergence metric over time"></canvas>
             </section>
           </div>
         </section>

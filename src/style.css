@@ -603,14 +603,9 @@ dt {
   display: none;
 }
 
-.metric-select-label {
-  min-width: min(300px, 100%);
-  margin-bottom: 10px;
-}
-
 .metric-card {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--hairline);
@@ -633,6 +628,34 @@ dt {
   font-size: 30px;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+}
+
+.chart-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(2, minmax(120px, 0.8fr));
+  gap: 8px;
+  align-items: end;
+}
+
+.chart-toolbar label {
+  min-width: 0;
+}
+
+.chart-toolbar span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.chart-readout {
+  min-height: 18px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .metric-exposition {
@@ -690,10 +713,12 @@ dt {
 #metricChart {
   display: block;
   width: 100%;
-  height: 220px;
+  height: 310px;
   border: 1px solid var(--hairline);
   border-radius: 7px;
   background: #fbfdfa;
+  cursor: crosshair;
+  touch-action: none;
 }
 
 .program-browser {
@@ -969,6 +994,10 @@ code {
     grid-column: span 3;
   }
 
+  .chart-toolbar label {
+    grid-column: auto;
+  }
+
   .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1007,10 +1036,22 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .chart-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  #metricChart {
+    height: 260px;
+  }
+
   label,
   .control-actions,
   .metrics {
     grid-column: 1;
+  }
+
+  .chart-toolbar label {
+    grid-column: auto;
   }
 
   .section-head {

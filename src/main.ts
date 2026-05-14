@@ -66,6 +66,9 @@ const checkpointEpochLabel = mustGet<HTMLDivElement>("checkpointEpochLabel");
 const checkpointLatestButton = mustGet<HTMLButtonElement>("checkpointLatest");
 const metricChart = mustGet<HTMLCanvasElement>("metricChart");
 const chartMetricSelect = mustGet<HTMLSelectElement>("chartMetric");
+const chartWindowSelect = mustGet<HTMLSelectElement>("chartWindow");
+const chartScaleSelect = mustGet<HTMLSelectElement>("chartScale");
+const chartReadout = mustGet<HTMLDivElement>("chartReadout");
 const chartEquation = mustGet<HTMLElement>("chartEquation");
 const phaseBadge = mustGet<HTMLSpanElement>("phaseBadge");
 const programList = mustGet<HTMLDivElement>("programList");
@@ -116,6 +119,9 @@ const viewportController = createViewportController({
 const metricPanel = createMetricPanel({
   metricChart,
   metricSelect: chartMetricSelect,
+  windowSelect: chartWindowSelect,
+  scaleSelect: chartScaleSelect,
+  chartReadout,
   chartEquation,
   phaseBadge
 });
