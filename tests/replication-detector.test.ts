@@ -83,6 +83,35 @@ describe("ReplicationDetector", () => {
 
     expect(detection.detected).toBe(true);
   });
+
+  it("triggers quickly when injected replicators produce a strong structure jump", () => {
+    const detector = new ReplicationDetector();
+    detector.noteInjectedProgram(64);
+
+    let detection = detector.observe(status(0, metric(0, 0.003), [
+      program("preset", 64)
+    ]));
+    detection = detector.observe(status(256, metric(256, 3.2), [
+      program("preset", 64)
+    ]));
+
+    expect(detection.detected).toBe(true);
+    expect(detection.reason).toContain("structure score rose");
+  });
+
+  it("does not treat a small post-injection metric drift as replication", () => {
+    const detector = new ReplicationDetector();
+    detector.noteInjectedProgram(64);
+
+    let detection = detector.observe(status(0, metric(0, 0.003), [
+      program("preset", 64)
+    ]));
+    detection = detector.observe(status(256, metric(256, 0.04), [
+      program("preset", 64)
+    ]));
+
+    expect(detection.detected).toBe(false);
+  });
 });
 
 function status(

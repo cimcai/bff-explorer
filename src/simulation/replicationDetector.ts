@@ -28,6 +28,7 @@ export interface ReplicationDetectorOptions {
   minTopProgramCount: number;
   minTopProgramGrowth: number;
   minStructureGain: number;
+  minInjectedStructureGain: number;
   minDominantGrowth: number;
   minUniqueDrop: number;
 }
@@ -36,6 +37,7 @@ const DEFAULT_OPTIONS: ReplicationDetectorOptions = {
   minTopProgramCount: 8,
   minTopProgramGrowth: 4,
   minStructureGain: 0.05,
+  minInjectedStructureGain: 0.5,
   minDominantGrowth: 0.00005,
   minUniqueDrop: 0.00005
 };
@@ -88,6 +90,13 @@ export class ReplicationDetector {
   }
 
   private detect(latest: ReplicationSample): ReplicationDetection {
+    if (this.injectedCountFloor > 0) {
+      const injectedDetection = this.detectAfterInjection(latest);
+      if (injectedDetection.detected) {
+        return injectedDetection;
+      }
+    }
+
     if (this.samples.length < 4) {
       return noDetection();
     }
@@ -162,6 +171,72 @@ export class ReplicationDetector {
       this.injectedCountFloor +
       Math.max(4, Math.ceil(this.injectedCountFloor * 0.5))
     );
+  }
+
+  private detectAfterInjection(
+    latest: ReplicationSample
+  ): ReplicationDetection {
+    if (this.samples.length < 2) {
+      return noDetection();
+    }
+
+    const baseline = this.samples[0];
+    if (latest.epoch <= baseline.epoch) {
+      return noDetection();
+    }
+
+    const structureGain = latest.structureScore - baseline.structureScore;
+    const dominantGrowth =
+      latest.dominantProgramFraction - baseline.dominantProgramFraction;
+    const uniqueDrop =
+      baseline.uniqueProgramFraction - latest.uniqueProgramFraction;
+    const topProgramGrowth = latest.topProgramCount - baseline.topProgramCount;
+    const repeatedProgramSignal =
+      latest.topProgramCount >=
+      Math.max(
+        this.options.minTopProgramCount,
+        Math.ceil(this.injectedCountFloor * 0.5)
+      );
+    const exactGrowthSignal =
+      latest.topProgramId === baseline.topProgramId &&
+      topProgramGrowth >= this.options.minTopProgramGrowth;
+    const strongMetricSignal =
+      structureGain >= this.options.minInjectedStructureGain;
+    const sustainedMetricSignal =
+      this.samples.length >= 3 &&
+      (latest.phaseTransitionDetected ||
+        latest.phaseTransitionScore >= 0.08 ||
+        structureGain >= this.options.minStructureGain ||
+        (dominantGrowth >= this.options.minDominantGrowth &&
+          uniqueDrop >= this.options.minUniqueDrop));
+
+    if (
+      !repeatedProgramSignal ||
+      (!strongMetricSignal && !(sustainedMetricSignal && exactGrowthSignal))
+    ) {
+      return noDetection();
+    }
+
+    const confidence = clamp01(
+      0.4 +
+        Math.min(0.35, Math.max(0, structureGain) / 4) +
+        Math.min(0.15, Math.max(0, topProgramGrowth) / 64) +
+        (latest.phaseTransitionDetected ? 0.1 : 0)
+    );
+
+    const reason =
+      `structure score rose from ${baseline.structureScore.toFixed(3)} ` +
+      `to ${latest.structureScore.toFixed(3)} after injection; ` +
+      `top repeated program has ${latest.topProgramCount} cells`;
+
+    return {
+      detected: true,
+      confidence,
+      epoch: latest.epoch,
+      reason,
+      metric: latest.metric,
+      topProgram: latest.topProgram
+    };
   }
 }
 

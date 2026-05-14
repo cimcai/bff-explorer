@@ -28,6 +28,10 @@ const mobilePage = await browser.newPage({ viewport: { width: 390, height: 900 }
 await mobilePage.goto(url, { waitUntil: "networkidle" });
 const mobileLayout = await inspectResponsiveLayout(mobilePage);
 await mobilePage.close();
+const movieTriggerPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+await movieTriggerPage.goto(url, { waitUntil: "networkidle" });
+const movieCaptureTriggerStatus = await exerciseMovieCaptureTrigger(movieTriggerPage);
+await movieTriggerPage.close();
 
 const initiallyCollapsedSections = await page.locator(".collapsible-section.collapsed").count();
 await page.locator('[data-collapsible-section="parameters"] [data-collapse-toggle]').click();
@@ -249,6 +253,7 @@ const result = {
   movieCaptureInitialStatus,
   movieCaptureDisabled,
   movieCaptureStartedStatus,
+  movieCaptureTriggerStatus,
   movieCaptureCanvasSize,
   replicatorPresetOptions,
   initialReplicatorCode,
@@ -346,6 +351,8 @@ if (
   movieCaptureDefaultChecked ||
   !movieCaptureInitialStatus?.includes("off") ||
   (!movieCaptureDisabled && !movieCaptureStartedStatus?.includes("Watching")) ||
+  (!movieCaptureDisabled &&
+    !movieCaptureTriggerStatus?.includes("Replication detected")) ||
   movieCaptureCanvasSize.width !== 1440 ||
   movieCaptureCanvasSize.height !== 810 ||
   replicatorPresetOptions < 3 ||
@@ -392,6 +399,38 @@ async function scrubTo(page, index) {
     input.dispatchEvent(new Event("input", { bubbles: true }));
   }, index);
   await page.waitForTimeout(250);
+}
+
+async function exerciseMovieCaptureTrigger(page) {
+  await page.locator('[data-collapsible-section="parameters"] [data-collapse-toggle]').click();
+  await page.locator("#metricInterval").fill("16");
+  await page.locator("#reset").click();
+  await page.locator('[data-collapsible-section="movie-capture"] [data-collapse-toggle]').click();
+  const captureToggle = page.locator("#autoMovieCapture");
+  if (await captureToggle.isDisabled()) {
+    return await page.locator("#movieCaptureStatus").textContent();
+  }
+  await captureToggle.check();
+  await page.waitForFunction(() =>
+    document.querySelector("#movieCaptureStatus")?.textContent?.includes("Watching")
+  );
+  await page.locator('[data-collapsible-section="replicator"] [data-collapse-toggle]').click();
+  await page.locator("#injectReplicator").click();
+  await page.waitForFunction(() =>
+    document.querySelector("#injectorStatus")?.textContent?.includes("Inserted 64")
+  );
+  await page.locator("#playPause").click();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector("#movieCaptureStatus")
+        ?.textContent?.includes("Replication detected"),
+    undefined,
+    { timeout: 20_000 }
+  );
+  const status = await page.locator("#movieCaptureStatus").textContent();
+  await captureToggle.uncheck();
+  return status;
 }
 
 async function isSectionCollapsed(page, sectionName) {
