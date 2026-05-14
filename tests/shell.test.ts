@@ -55,6 +55,9 @@ describe("app shell markup", () => {
     expect(html).toContain('class="docs-section collapsible-section collapsed"');
     expect(html).toContain('data-collapsible-section="docs"');
     expect(html).toContain("Core rules, replication meaning, and source links.");
+    expect(html).toContain("copied into a fresh 128-byte execution buffer");
+    expect(html).toContain("whole 64-byte tape or a smaller substring");
+    expect(html).toContain("ordered pair executes once");
     expect(html).toContain('id="checkpointLatest"');
     expect(html).toContain("Checkpoint 0/0");
     expect(html).toContain("Epoch: 0");

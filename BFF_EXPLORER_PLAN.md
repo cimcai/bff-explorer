@@ -16,6 +16,9 @@ changes that preserve the simulator's substrate fidelity.
   advanced subgroup.
 - Docs combines the model rules, replication meaning, practical timing note,
   and source links in one collapsed section directly below the canvas.
+- Keep Docs explicit about BFF execution: selected tapes are copied into a
+  mutable pair buffer, order matters, and functional replicators may be
+  substrings rather than exact 64-byte cells.
 - Repeated Programs and Pair Interaction Lab stay in a single vertical flow,
   even on wide screens.
 - The program browser intentionally hides singleton programs. Random soup
