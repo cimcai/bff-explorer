@@ -9,6 +9,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:browser": "node scripts/browser-smoke.mjs",
+    "test:replication-rate": "tsx scripts/check-mutation-rate-replication.ts",
     "calibrate:defaults": "tsx scripts/calibrate-defaults.ts",
     "check:emergence": "tsx scripts/check-emergence.ts",
     "find:emergence": "tsx scripts/find-emergence.ts"
