@@ -437,6 +437,7 @@ label {
 
 .parameters-panel label,
 .parameters-panel .control-actions,
+.parameters-panel .reproducible-run,
 .replicator-controls label {
   grid-column: 1;
 }
@@ -454,6 +455,37 @@ label {
   color: #0f373d;
   background: var(--accent-soft);
   border-color: #b8d6d2;
+}
+
+.reproducible-run {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--hairline);
+  padding-top: 10px;
+}
+
+.seed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seed-toggle input {
+  width: auto;
+}
+
+#loadObservedRun {
+  min-height: 34px;
+  color: #0f373d;
+  background: var(--accent-soft);
+  border-color: #b8d6d2;
+}
+
+.repro-status {
+  min-height: 20px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .replicator-controls {

@@ -67,9 +67,23 @@ const movieCaptureCanvasSize = await page.locator("#movieCaptureCanvas").evaluat
   height: canvas.height
 }));
 await page.locator('[data-collapsible-section="replicator"] [data-collapse-toggle]').click();
+const fixedSeedControlCount = await page.locator("#fixedSeedEnabled").count();
+const loadObservedRunButtonCount = await page.locator("#loadObservedRun").count();
+const fixedSeedDefaultChecked = await page.locator("#fixedSeedEnabled").isChecked();
+const initialReproStatus = await page.locator("#reproStatus").textContent();
 await page.locator("#mutationRate").fill("0.002");
 await page.locator("#resetDefaults").click();
 const resetMutationValue = await page.locator("#mutationRate").inputValue();
+const fixedSeedAfterDefaults = await page.locator("#fixedSeedEnabled").isChecked();
+const seedAfterDefaults = await page.locator("#seed").inputValue();
+await page.locator("#loadObservedRun").click();
+await page.waitForFunction(() =>
+  document.querySelector("#reproStatus")?.textContent?.includes("Loaded observed hit")
+);
+const observedFixedChecked = await page.locator("#fixedSeedEnabled").isChecked();
+const observedSeedValue = await page.locator("#seed").inputValue();
+const observedMutationValue = await page.locator("#mutationRate").inputValue();
+const observedReproStatus = await page.locator("#reproStatus").textContent();
 const replicatorPresetOptions = await page.locator("#replicatorPreset option").count();
 const initialReplicatorCode = await page.locator("#replicatorCode").textContent();
 await page.locator("#replicatorCount").fill("3");
@@ -260,6 +274,16 @@ const result = {
   latestCheckpointLabel,
   latestEpochLabel,
   resetMutationValue,
+  fixedSeedControlCount,
+  loadObservedRunButtonCount,
+  fixedSeedDefaultChecked,
+  initialReproStatus,
+  fixedSeedAfterDefaults,
+  seedAfterDefaults,
+  observedFixedChecked,
+  observedSeedValue,
+  observedMutationValue,
+  observedReproStatus,
   initiallyCollapsedSections,
   movieCaptureToggleCount,
   manualMovieCaptureButtonCount,
@@ -357,12 +381,22 @@ if (
   metricChartSize.backingHeight < metricChartSize.cssHeight ||
   chartOptionCount !== 5 ||
   initiallyCollapsedSections !== 8 ||
-  seedVisible !== 0 ||
+  seedVisible !== 1 ||
   checksumVisible !== 0 ||
   redundantMetricCount !== 0 ||
   checkpointLatestCount !== 1 ||
   newRunCount !== 0 ||
   resetMutationValue !== "0.0001220703125" ||
+  fixedSeedControlCount !== 1 ||
+  loadObservedRunButtonCount !== 1 ||
+  fixedSeedDefaultChecked ||
+  !initialReproStatus?.includes("fresh random seed") ||
+  fixedSeedAfterDefaults ||
+  seedAfterDefaults !== "0" ||
+  !observedFixedChecked ||
+  observedSeedValue !== "1" ||
+  observedMutationValue !== "0.0001220703125" ||
+  !observedReproStatus?.includes("epoch 11008") ||
   movieCaptureToggleCount !== 1 ||
   manualMovieCaptureButtonCount !== 1 ||
   movieCaptureDefaultChecked ||

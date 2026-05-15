@@ -20,6 +20,11 @@ describe("app shell markup", () => {
     expect(html).toContain('id="timeBudgetMs"');
     expect(html).toContain(`title="Default: ${config.timeBudgetMs}"`);
     expect(html).toContain(`Default: ${config.timeBudgetMs}.`);
+    expect(html).toContain('id="fixedSeedEnabled"');
+    expect(html).toContain('id="seed"');
+    expect(html).toContain('id="loadObservedRun"');
+    expect(html).toContain('id="reproStatus"');
+    expect(html).toContain("Reset uses a fresh random seed");
     expect(html).not.toContain('id="autoCapture"');
     expect(html).not.toContain('id="captureStatus"');
     expect(html).toContain('id="replicatorPreset"');
@@ -28,7 +33,7 @@ describe("app shell markup", () => {
     expect(html).toContain('id="loadReplicatorToLab"');
     expect(html).toContain('id="resetDefaults"');
     expect(html).toContain('id="reset"');
-    expect(html).toContain("Reset with a new randomized soup");
+    expect(html).toContain("fixed seed replays the exact run");
     expect(html).not.toContain('id="newRun"');
     expect(html).not.toContain("<summary>Advanced parameters</summary>");
     expect(html).not.toContain("Replication movie capture</summary>");
@@ -42,10 +47,13 @@ describe("app shell markup", () => {
     expect(html).not.toContain(">Default</button>");
   });
 
-  it("does not expose seed or checksum controls", () => {
+  it("exposes deterministic seed controls without checksum clutter", () => {
     const html = renderAppShell(defaultConfig(), defaultConfig());
 
-    expect(html).not.toContain('id="seed"');
+    expect(html).toContain("Use fixed seed on reset");
+    expect(html).toContain('max="4294967295"');
+    expect(html).toContain("Load observed run");
+    expect(html).toContain("Fixed run seed");
     expect(html).not.toContain("checksum");
   });
 

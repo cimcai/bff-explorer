@@ -25,7 +25,7 @@ export function renderAppShell(
             <canvas id="dish" width="1920" height="1080" aria-label="2D BFF soup"></canvas>
             <div class="canvas-hud canvas-hud-top" aria-label="Canvas controls">
               <button id="playPause" class="icon-button" type="button" aria-label="Play simulation" title="Play simulation" data-tip="Play simulation">Play</button>
-              <button id="reset" class="icon-button" type="button" aria-label="Reset with new random soup" title="Reset" data-tip="Reset with a new randomized soup using the current parameter values">Reset</button>
+              <button id="reset" class="icon-button" type="button" aria-label="Reset simulation" title="Reset" data-tip="Reset the soup using the current parameter values; fixed seed replays the exact run">Reset</button>
               <button id="fullscreen" class="icon-button" type="button" aria-label="Enter fullscreen" title="Fullscreen" data-tip="Enter fullscreen">Full</button>
             </div>
             <div class="canvas-scrubber" aria-label="Checkpoint scrubber">
@@ -62,6 +62,18 @@ export function renderAppShell(
               ${controlMarkup(defaults, "Checkpoint interval", "checkpointInterval", String(config.checkpointInterval), `Number of epochs between saved scrub states. Coarser checkpoints use less memory. The simulator keeps at most ${MAX_CHECKPOINTS} checkpoints under a fixed memory ceiling.`)}
               ${controlMarkup(defaults, "Metric interval", "metricInterval", String(config.metricInterval), "Number of epochs between heavier metric calculations.")}
               ${controlMarkup(defaults, "Time budget (milliseconds)", "timeBudgetMs", String(config.timeBudgetMs), `Foreground worker compute budget per update. Values are capped at ${MAX_TIME_BUDGET_MS}ms, and hidden tabs are throttled automatically.`)}
+              <div class="reproducible-run" aria-label="Reproducible run controls">
+                <label class="seed-toggle">
+                  <input id="fixedSeedEnabled" type="checkbox" />
+                  <span>Use fixed seed on reset</span>
+                </label>
+                <label>
+                  <span class="label-row">Seed ${info("When fixed seed is enabled, Reset reuses this unsigned 32-bit seed with the current parameter values. When disabled, Reset chooses a fresh random seed.")}</span>
+                  <input id="seed" type="number" min="0" max="4294967295" step="1" value="${config.seed}" title="Fixed run seed" />
+                </label>
+                <button id="loadObservedRun" type="button" title="Load the seed and mutation rate from the observed functional replication assay run.">Load observed run</button>
+                <p id="reproStatus" class="repro-status" aria-live="polite">Reset uses a fresh random seed unless fixed seed is enabled.</p>
+              </div>
               <div class="control-actions">
                 <button id="resetDefaults" type="button" title="Restore all parameter controls to their default values.">Reset to defaults</button>
               </div>

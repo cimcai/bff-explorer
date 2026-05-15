@@ -39,6 +39,10 @@ const mutationRateInput = mustGet<HTMLInputElement>("mutationRate");
 const checkpointIntervalInput = mustGet<HTMLInputElement>("checkpointInterval");
 const metricIntervalInput = mustGet<HTMLInputElement>("metricInterval");
 const timeBudgetInput = mustGet<HTMLInputElement>("timeBudgetMs");
+const fixedSeedInput = mustGet<HTMLInputElement>("fixedSeedEnabled");
+const seedInput = mustGet<HTMLInputElement>("seed");
+const loadObservedRunButton = mustGet<HTMLButtonElement>("loadObservedRun");
+const reproStatus = mustGet<HTMLParagraphElement>("reproStatus");
 const resetDefaultsButton = mustGet<HTMLButtonElement>("resetDefaults");
 const autoMovieCaptureInput =
   mustGet<HTMLInputElement>("autoMovieCapture");
@@ -188,12 +192,17 @@ const runtimeControls = createRuntimeControls({
     checkpointIntervalInput,
     metricIntervalInput,
     timeBudgetInput,
+    fixedSeedInput,
+    seedInput,
+    loadObservedRunButton,
+    reproStatus,
     resetDefaultsButton,
     replicatorPresetSelect,
     replicatorCountInput
   },
   onUpdateConfig: updateRuntimeConfig,
-  onDefaultsReset: () => replicatorControls.resetToDefault()
+  onDefaultsReset: () => replicatorControls.resetToDefault(),
+  onObservedRunLoad: resetRunFromControls
 });
 
 const movieCaptureController = createMovieCaptureController({
@@ -259,10 +268,8 @@ playPauseButton.addEventListener("click", () => {
 });
 
 resetButton.addEventListener("click", () => {
-  runtimeControls.randomizeSeed();
-  viewportController.resetFit();
-  movieCaptureController.resetRun();
-  post({ type: "reset", config: runtimeControls.readConfig() });
+  runtimeControls.prepareSeedForReset();
+  resetRunFromControls();
 });
 
 window.addEventListener("pagehide", () => {
@@ -309,6 +316,12 @@ function updatePlayPauseButton(): void {
 
 function updateRuntimeConfig(update: RuntimeConfigUpdate): void {
   post({ type: "updateConfig", config: update });
+}
+
+function resetRunFromControls(): void {
+  viewportController.resetFit();
+  movieCaptureController.resetRun();
+  post({ type: "reset", config: runtimeControls.readConfig() });
 }
 
 function post(message: WorkerInMessage, transfer?: Transferable[]): void {
