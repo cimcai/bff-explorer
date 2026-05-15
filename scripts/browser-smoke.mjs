@@ -362,7 +362,7 @@ if (
   redundantMetricCount !== 0 ||
   checkpointLatestCount !== 1 ||
   newRunCount !== 0 ||
-  resetMutationValue !== "0.000244140625" ||
+  resetMutationValue !== "0.0001220703125" ||
   movieCaptureToggleCount !== 1 ||
   manualMovieCaptureButtonCount !== 1 ||
   movieCaptureDefaultChecked ||

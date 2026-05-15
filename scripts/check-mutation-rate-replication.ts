@@ -159,16 +159,16 @@ async function runCoordinator(): Promise<void> {
   await Promise.all(exits);
   printSummary(results, rates);
 
-  const oldHits = hitCount(results, rates[0].label);
+  const comparisonHits = hitCount(results, rates[0].label);
   const currentHits = hitCount(results, rates[1].label);
   if (currentHits < minCurrentHits) {
     throw new Error(
       `Current mutation rate produced ${currentHits} confirmed replication hits; expected at least ${minCurrentHits}.`
     );
   }
-  if (requireCurrentBeatsOld && currentHits <= oldHits) {
+  if (requireCurrentBeatsOld && currentHits <= comparisonHits) {
     throw new Error(
-      `Current mutation rate did not beat the old rate: current=${currentHits}, old=${oldHits}.`
+      `Current mutation rate did not beat the comparison rate: current=${currentHits}, comparison=${comparisonHits}.`
     );
   }
 
@@ -555,8 +555,8 @@ function rateConfigs(): RateConfig[] {
   const config = defaultConfig();
   return [
     {
-      label: "old-1/8192",
-      mutationRate: numberFromEnv("REPLICATION_OLD_RATE", 1 / 8192)
+      label: process.env.REPLICATION_COMPARISON_LABEL ?? "previous-1/4096",
+      mutationRate: numberFromEnv("REPLICATION_COMPARISON_RATE", 1 / 4096)
     },
     {
       label: "current-default",
