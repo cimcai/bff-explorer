@@ -40,7 +40,21 @@ interface WorkerDone {
   worker: number;
 }
 
-type WorkerMessage = BatchResult | WorkerDone;
+interface WorkerProgress {
+  type: "progress";
+  worker: number;
+  label: string;
+  seed: number;
+  mutationRate: number;
+  epoch: number;
+  topProgramCount: number;
+  dominantProgramFraction: number;
+  structureScore: number;
+  assays: number;
+  epochsPerSecond: number;
+}
+
+type WorkerMessage = BatchResult | WorkerDone | WorkerProgress;
 
 interface Sample {
   epoch: number;
@@ -94,6 +108,8 @@ async function runCoordinator(): Promise<void> {
         rates,
         detection: {
           candidateMinTopCount: candidateMinTopCount(),
+          maxAssaysPerBatch: maxAssaysPerBatch(),
+          progressInterval: progressInterval(),
           assaySeeds: assaySeeds(),
           assayEpochs: assayEpochs(),
           assayPatchRadius: assayPatchRadius(),
@@ -197,6 +213,8 @@ function runBatch(
   const started = performance.now();
   let detected: BatchResult | null = null;
   let latest = sample(sim);
+  let assays = 0;
+  let nextProgressEpoch = progressInterval();
 
   while (sim.epoch < epochBudget && (!detected || !stopOnDetection)) {
     sim.stepEpoch();
@@ -204,11 +222,23 @@ function runBatch(
       continue;
     }
     latest = sample(sim);
+    if (latest.epoch >= nextProgressEpoch || latest.epoch === epochBudget) {
+      console.log(
+        JSON.stringify(progressResult(worker, rate, seed, latest, assays, started))
+      );
+      nextProgressEpoch += progressInterval();
+    }
     const top = latest.top;
-    if (!top || top.count < candidateMinTopCount() || assayed.has(top.id)) {
+    if (
+      !top ||
+      top.count < candidateMinTopCount() ||
+      assayed.has(top.id) ||
+      assays >= maxAssaysPerBatch()
+    ) {
       continue;
     }
     assayed.add(top.id);
+    assays += 1;
     const assay = assayReplicator(Uint8Array.from(top.bytes));
     if (assay.passed) {
       detected = batchResult(worker, rate, seed, latest, assay, started, true);
@@ -237,6 +267,29 @@ function sample(sim: BffSimulator): Sample {
     structureScore: status.latestMetric.structureScore,
     dominantProgramFraction: status.latestMetric.dominantProgramFraction,
     phaseTransitionDetected: status.latestMetric.phaseTransitionDetected
+  };
+}
+
+function progressResult(
+  worker: number,
+  rate: RateConfig,
+  seed: number,
+  sampleAtProgress: Sample,
+  assays: number,
+  started: number
+): WorkerProgress {
+  return {
+    type: "progress",
+    worker,
+    label: rate.label,
+    seed,
+    mutationRate: rate.mutationRate,
+    epoch: sampleAtProgress.epoch,
+    topProgramCount: sampleAtProgress.top?.count ?? 0,
+    dominantProgramFraction: sampleAtProgress.dominantProgramFraction,
+    structureScore: sampleAtProgress.structureScore,
+    assays,
+    epochsPerSecond: sampleAtProgress.epoch / elapsedSeconds(started)
   };
 }
 
@@ -397,6 +450,24 @@ function handleWorkerLine(line: string, results: BatchResult[]): void {
     return;
   }
 
+  if (message.type === "progress") {
+    console.log(
+      [
+        "progress",
+        `worker=${message.worker}`,
+        `rate=${message.label}`,
+        `seed=${message.seed}`,
+        `epoch=${message.epoch}`,
+        `top=${message.topProgramCount}`,
+        `dominant=${(message.dominantProgramFraction * 100).toFixed(3)}%`,
+        `structure=${message.structureScore.toFixed(3)}`,
+        `assays=${message.assays}`,
+        `eps=${message.epochsPerSecond.toFixed(1)}`
+      ].join(" ")
+    );
+    return;
+  }
+
   results.push(message);
   const label = message.detected ? "HIT" : "miss";
   console.log(
@@ -498,7 +569,15 @@ function rateConfigs(): RateConfig[] {
 }
 
 function candidateMinTopCount(): number {
-  return numberFromEnv("REPLICATION_CANDIDATE_MIN_TOP_COUNT", 3);
+  return numberFromEnv("REPLICATION_CANDIDATE_MIN_TOP_COUNT", 16);
+}
+
+function maxAssaysPerBatch(): number {
+  return numberFromEnv("REPLICATION_MAX_ASSAYS_PER_BATCH", 32);
+}
+
+function progressInterval(): number {
+  return numberFromEnv("REPLICATION_PROGRESS_INTERVAL", 2048);
 }
 
 function assaySeeds(): number {
