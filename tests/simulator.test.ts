@@ -19,7 +19,7 @@ import {
 
 describe("BffSimulator checkpoints", () => {
   it("defaults to low nonzero mutation for autonomous exploration", () => {
-    expect(defaultConfig().mutationRate).toBe(1 / 8192);
+    expect(defaultConfig().mutationRate).toBe(1 / 4096);
   });
 
   it("sanitizes runtime inputs to tab-safe upper bounds", () => {
