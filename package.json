@@ -12,7 +12,8 @@
     "test:replication-rate": "tsx scripts/check-mutation-rate-replication.ts",
     "calibrate:defaults": "tsx scripts/calibrate-defaults.ts",
     "check:emergence": "tsx scripts/check-emergence.ts",
-    "find:emergence": "tsx scripts/find-emergence.ts"
+    "find:emergence": "tsx scripts/find-emergence.ts",
+    "find:visible": "tsx scripts/find-visible-replication.ts"
   },
   "devDependencies": {
     "playwright-core": "^1.59.1",
