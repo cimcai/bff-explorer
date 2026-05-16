@@ -7,6 +7,12 @@ import type {
   SimulationConfig
 } from "../simulation/simulator";
 import { numberFromInput } from "./dom";
+import {
+  parseRunParamsSource,
+  runParamsToJson,
+  runParamsToUrl,
+  type RunParams
+} from "./runParams";
 
 export interface RuntimeControls {
   readConfig(): SimulationConfig;
@@ -20,7 +26,12 @@ interface RuntimeControlRefs {
   timeBudgetInput: HTMLInputElement;
   fixedSeedInput: HTMLInputElement;
   seedInput: HTMLInputElement;
-  loadObservedRunButton: HTMLButtonElement;
+  runParamsInput: HTMLTextAreaElement;
+  runParamsFileInput: HTMLInputElement;
+  applyRunParamsButton: HTMLButtonElement;
+  uploadRunParamsButton: HTMLButtonElement;
+  copyRunParamsJsonButton: HTMLButtonElement;
+  copyRunParamsUrlButton: HTMLButtonElement;
   reproStatus: HTMLParagraphElement;
   resetDefaultsButton: HTMLButtonElement;
   replicatorPresetSelect: HTMLSelectElement;
@@ -31,16 +42,12 @@ interface RuntimeControlsOptions {
   config: SimulationConfig;
   defaults: SimulationConfig;
   refs: RuntimeControlRefs;
+  initialFixedSeed?: boolean;
+  initialStatus?: string | null;
   onUpdateConfig: (update: RuntimeConfigUpdate) => void;
   onDefaultsReset: () => void;
-  onObservedRunLoad: () => void;
+  onRunParamsApplied: () => void;
 }
-
-const OBSERVED_REPLICATION_RUN = {
-  seed: 1,
-  mutationRate: 1 / 8192,
-  targetEpoch: 11008
-} as const;
 
 const MAX_SEED = 0xffff_ffff;
 
@@ -51,9 +58,11 @@ export function createRuntimeControls(
     config,
     defaults,
     refs,
+    initialFixedSeed = false,
+    initialStatus = null,
     onUpdateConfig,
     onDefaultsReset,
-    onObservedRunLoad
+    onRunParamsApplied
   } = options;
   const {
     mutationRateInput,
@@ -62,13 +71,20 @@ export function createRuntimeControls(
     timeBudgetInput,
     fixedSeedInput,
     seedInput,
-    loadObservedRunButton,
+    runParamsInput,
+    runParamsFileInput,
+    applyRunParamsButton,
+    uploadRunParamsButton,
+    copyRunParamsJsonButton,
+    copyRunParamsUrlButton,
     reproStatus,
     resetDefaultsButton,
     replicatorPresetSelect,
     replicatorCountInput
   } = refs;
   let currentSeed = config.seed;
+  fixedSeedInput.checked = initialFixedSeed;
+  updateSeedStatus(initialStatus ?? undefined);
 
   mutationRateInput.addEventListener("change", () => {
     onUpdateConfig({
@@ -108,18 +124,39 @@ export function createRuntimeControls(
     updateSeedStatus();
   });
 
-  loadObservedRunButton.addEventListener("click", () => {
-    fixedSeedInput.checked = true;
-    currentSeed = OBSERVED_REPLICATION_RUN.seed;
-    seedInput.value = String(OBSERVED_REPLICATION_RUN.seed);
-    mutationRateInput.value = String(OBSERVED_REPLICATION_RUN.mutationRate);
-    updateSeedStatus(
-      `Loaded observed hit: seed ${OBSERVED_REPLICATION_RUN.seed}, mutation ${OBSERVED_REPLICATION_RUN.mutationRate}. Watch around epoch ${OBSERVED_REPLICATION_RUN.targetEpoch}.`
+  applyRunParamsButton.addEventListener("click", () => {
+    applyRunParamsFromSource(runParamsInput.value, "Loaded run parameters.");
+  });
+
+  uploadRunParamsButton.addEventListener("click", () => {
+    runParamsFileInput.click();
+  });
+
+  runParamsFileInput.addEventListener("change", async () => {
+    const file = runParamsFileInput.files?.[0];
+    if (!file) {
+      return;
+    }
+    try {
+      const source = await file.text();
+      runParamsInput.value = source;
+      applyRunParamsFromSource(source, `Uploaded ${file.name}.`);
+    } catch {
+      updateSeedStatus("Could not read that JSON file.");
+    } finally {
+      runParamsFileInput.value = "";
+    }
+  });
+
+  copyRunParamsJsonButton.addEventListener("click", () => {
+    copyRunParams(runParamsToJson(readConfig()), "Copied run JSON.");
+  });
+
+  copyRunParamsUrlButton.addEventListener("click", () => {
+    copyRunParams(
+      runParamsToUrl(readConfig(), globalThis.location.href),
+      "Copied run URL."
     );
-    onUpdateConfig({
-      mutationRate: OBSERVED_REPLICATION_RUN.mutationRate
-    });
-    onObservedRunLoad();
   });
 
   resetDefaultsButton.addEventListener("click", () => {
@@ -172,6 +209,60 @@ export function createRuntimeControls(
     updateSeedStatus();
   }
 
+  function applyRunParamsFromSource(source: string, successMessage: string): void {
+    try {
+      applyRunParams(parseRunParamsSource(source));
+      updateSeedStatus(successMessage);
+      onUpdateConfig(runtimeUpdateFromControls());
+      onRunParamsApplied();
+    } catch (caught) {
+      updateSeedStatus(
+        caught instanceof Error ? caught.message : "Could not load run parameters."
+      );
+    }
+  }
+
+  function applyRunParams(params: RunParams): void {
+    if (params.seed !== undefined) {
+      currentSeed = params.seed;
+      seedInput.value = String(params.seed);
+      fixedSeedInput.checked = params.fixedSeed ?? true;
+    } else if (params.fixedSeed !== undefined) {
+      fixedSeedInput.checked = params.fixedSeed;
+    }
+    if (params.mutationRate !== undefined) {
+      mutationRateInput.value = String(params.mutationRate);
+    }
+    if (params.checkpointInterval !== undefined) {
+      checkpointIntervalInput.value = String(params.checkpointInterval);
+    }
+    if (params.metricInterval !== undefined) {
+      metricIntervalInput.value = String(params.metricInterval);
+    }
+    if (params.timeBudgetMs !== undefined) {
+      timeBudgetInput.value = String(params.timeBudgetMs);
+    }
+  }
+
+  function runtimeUpdateFromControls(): RuntimeConfigUpdate {
+    return {
+      mutationRate: numberFromInput(mutationRateInput, config.mutationRate),
+      checkpointInterval: numberFromInput(
+        checkpointIntervalInput,
+        config.checkpointInterval
+      ),
+      metricInterval: numberFromInput(metricIntervalInput, config.metricInterval),
+      timeBudgetMs: numberFromInput(timeBudgetInput, config.timeBudgetMs)
+    };
+  }
+
+  function copyRunParams(text: string, successMessage: string): void {
+    runParamsInput.value = text;
+    void copyText(text)
+      .then(() => updateSeedStatus(successMessage))
+      .catch(() => updateSeedStatus("Generated text below; copy it manually."));
+  }
+
   function updateSeedStatus(message?: string): void {
     if (message) {
       reproStatus.textContent = message;
@@ -192,6 +283,14 @@ export function createRuntimeControls(
     readConfig,
     prepareSeedForReset
   };
+}
+
+async function copyText(text: string): Promise<void> {
+  if (globalThis.navigator?.clipboard?.writeText) {
+    await globalThis.navigator.clipboard.writeText(text);
+    return;
+  }
+  throw new Error("Clipboard is unavailable.");
 }
 
 function seedFromInput(input: HTMLInputElement, fallback: number): number {

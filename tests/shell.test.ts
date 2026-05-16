@@ -22,7 +22,12 @@ describe("app shell markup", () => {
     expect(html).toContain(`Default: ${config.timeBudgetMs}.`);
     expect(html).toContain('id="fixedSeedEnabled"');
     expect(html).toContain('id="seed"');
-    expect(html).toContain('id="loadObservedRun"');
+    expect(html).toContain('id="runParamsInput"');
+    expect(html).toContain('id="runParamsFile"');
+    expect(html).toContain('id="applyRunParams"');
+    expect(html).toContain('id="uploadRunParams"');
+    expect(html).toContain('id="copyRunParamsJson"');
+    expect(html).toContain('id="copyRunParamsUrl"');
     expect(html).toContain('id="reproStatus"');
     expect(html).toContain("Reset uses a fresh random seed");
     expect(html).not.toContain('id="autoCapture"');
@@ -52,7 +57,9 @@ describe("app shell markup", () => {
 
     expect(html).toContain("Use fixed seed on reset");
     expect(html).toContain('max="4294967295"');
-    expect(html).toContain("Load observed run");
+    expect(html).toContain("Paste run JSON or a URL");
+    expect(html).toContain("Upload JSON");
+    expect(html).toContain("Copy URL");
     expect(html).toContain("Fixed run seed");
     expect(html).not.toContain("checksum");
   });

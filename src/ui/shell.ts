@@ -71,7 +71,17 @@ export function renderAppShell(
                   <span class="label-row">Seed ${info("When fixed seed is enabled, Reset reuses this unsigned 32-bit seed with the current parameter values. When disabled, Reset chooses a fresh random seed.")}</span>
                   <input id="seed" type="number" min="0" max="4294967295" step="1" value="${config.seed}" title="Fixed run seed" />
                 </label>
-                <button id="loadObservedRun" type="button" title="Load the seed and mutation rate from the observed functional replication assay run.">Load observed run</button>
+                <label class="run-import-field">
+                  <span class="label-row">Load params ${info("Paste run JSON or a URL containing run parameters. Supported JSON fields: seed, mutationRate, checkpointInterval, metricInterval, timeBudgetMs, and fixedSeed.")}</span>
+                  <textarea id="runParamsInput" rows="4" spellcheck="false" placeholder='{"seed":1,"mutationRate":0.0001220703125,"metricInterval":64,"checkpointInterval":256,"timeBudgetMs":32}'></textarea>
+                </label>
+                <input id="runParamsFile" class="file-input" type="file" accept="application/json,.json" />
+                <div class="run-param-actions" aria-label="Run parameter import and export controls">
+                  <button id="applyRunParams" type="button" title="Apply the pasted JSON or URL and reset the simulation.">Apply</button>
+                  <button id="uploadRunParams" type="button" title="Upload a JSON file and reset the simulation.">Upload JSON</button>
+                  <button id="copyRunParamsJson" type="button" title="Copy the current run parameters as JSON.">Copy JSON</button>
+                  <button id="copyRunParamsUrl" type="button" title="Copy a shareable URL for the current run parameters.">Copy URL</button>
+                </div>
                 <p id="reproStatus" class="repro-status" aria-live="polite">Reset uses a fresh random seed unless fixed seed is enabled.</p>
               </div>
               <div class="control-actions">

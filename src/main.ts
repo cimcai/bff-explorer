@@ -16,12 +16,28 @@ import { createMetricPanel } from "./ui/metricPanel";
 import { createMovieCaptureController } from "./ui/movieCapture/movieCaptureController";
 import { createProgramBrowser } from "./ui/programBrowser";
 import { createReplicatorControls } from "./ui/replicatorControls";
+import {
+  mergeRunParamsIntoConfig,
+  parseRunParamsFromUrl,
+  type RunParams
+} from "./ui/runParams";
 import { createRuntimeControls } from "./ui/runtimeControls";
 import { bindTooltips } from "./ui/tooltipController";
 import { createViewportController } from "./ui/viewportController";
 
 const DEFAULT_CONFIG = defaultConfig();
-const config = { ...DEFAULT_CONFIG };
+let initialRunParams: RunParams | null = null;
+let initialRunParamsStatus: string | null = null;
+try {
+  initialRunParams = parseRunParamsFromUrl(globalThis.location.href);
+  if (initialRunParams) {
+    initialRunParamsStatus = "Loaded run parameters from URL.";
+  }
+} catch (caught) {
+  initialRunParamsStatus =
+    caught instanceof Error ? caught.message : "Could not load URL parameters.";
+}
+const config = mergeRunParamsIntoConfig(DEFAULT_CONFIG, initialRunParams);
 const app = document.querySelector<HTMLDivElement>("#app");
 
 if (!app) {
@@ -41,7 +57,13 @@ const metricIntervalInput = mustGet<HTMLInputElement>("metricInterval");
 const timeBudgetInput = mustGet<HTMLInputElement>("timeBudgetMs");
 const fixedSeedInput = mustGet<HTMLInputElement>("fixedSeedEnabled");
 const seedInput = mustGet<HTMLInputElement>("seed");
-const loadObservedRunButton = mustGet<HTMLButtonElement>("loadObservedRun");
+const runParamsInput = mustGet<HTMLTextAreaElement>("runParamsInput");
+const runParamsFileInput = mustGet<HTMLInputElement>("runParamsFile");
+const applyRunParamsButton = mustGet<HTMLButtonElement>("applyRunParams");
+const uploadRunParamsButton = mustGet<HTMLButtonElement>("uploadRunParams");
+const copyRunParamsJsonButton =
+  mustGet<HTMLButtonElement>("copyRunParamsJson");
+const copyRunParamsUrlButton = mustGet<HTMLButtonElement>("copyRunParamsUrl");
 const reproStatus = mustGet<HTMLParagraphElement>("reproStatus");
 const resetDefaultsButton = mustGet<HTMLButtonElement>("resetDefaults");
 const autoMovieCaptureInput =
@@ -194,15 +216,23 @@ const runtimeControls = createRuntimeControls({
     timeBudgetInput,
     fixedSeedInput,
     seedInput,
-    loadObservedRunButton,
+    runParamsInput,
+    runParamsFileInput,
+    applyRunParamsButton,
+    uploadRunParamsButton,
+    copyRunParamsJsonButton,
+    copyRunParamsUrlButton,
     reproStatus,
     resetDefaultsButton,
     replicatorPresetSelect,
     replicatorCountInput
   },
+  initialFixedSeed:
+    initialRunParams?.fixedSeed ?? initialRunParams?.seed !== undefined,
+  initialStatus: initialRunParamsStatus,
   onUpdateConfig: updateRuntimeConfig,
   onDefaultsReset: () => replicatorControls.resetToDefault(),
-  onObservedRunLoad: resetRunFromControls
+  onRunParamsApplied: resetRunFromControls
 });
 
 const movieCaptureController = createMovieCaptureController({

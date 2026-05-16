@@ -28,6 +28,28 @@ const mobilePage = await browser.newPage({ viewport: { width: 390, height: 900 }
 await mobilePage.goto(url, { waitUntil: "networkidle" });
 const mobileLayout = await inspectResponsiveLayout(mobilePage);
 await mobilePage.close();
+const urlParamPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+const urlParamUrl = new URL(url);
+urlParamUrl.searchParams.set("fixedSeed", "1");
+urlParamUrl.searchParams.set("seed", "12");
+urlParamUrl.searchParams.set("mutationRate", "0.003");
+urlParamUrl.searchParams.set("checkpointInterval", "128");
+urlParamUrl.searchParams.set("metricInterval", "64");
+urlParamUrl.searchParams.set("timeBudgetMs", "8");
+await urlParamPage.goto(urlParamUrl.toString(), { waitUntil: "networkidle" });
+await urlParamPage
+  .locator('[data-collapsible-section="parameters"] [data-collapse-toggle]')
+  .click();
+const urlParamState = {
+  fixed: await urlParamPage.locator("#fixedSeedEnabled").isChecked(),
+  seed: await urlParamPage.locator("#seed").inputValue(),
+  mutationRate: await urlParamPage.locator("#mutationRate").inputValue(),
+  checkpointInterval: await urlParamPage.locator("#checkpointInterval").inputValue(),
+  metricInterval: await urlParamPage.locator("#metricInterval").inputValue(),
+  timeBudgetMs: await urlParamPage.locator("#timeBudgetMs").inputValue(),
+  status: await urlParamPage.locator("#reproStatus").textContent()
+};
+await urlParamPage.close();
 const movieTriggerPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 await movieTriggerPage.goto(url, { waitUntil: "networkidle" });
 const movieCaptureTriggerStatus = await exerciseMovieCaptureTrigger(movieTriggerPage);
@@ -68,7 +90,12 @@ const movieCaptureCanvasSize = await page.locator("#movieCaptureCanvas").evaluat
 }));
 await page.locator('[data-collapsible-section="replicator"] [data-collapse-toggle]').click();
 const fixedSeedControlCount = await page.locator("#fixedSeedEnabled").count();
-const loadObservedRunButtonCount = await page.locator("#loadObservedRun").count();
+const runParamsInputCount = await page.locator("#runParamsInput").count();
+const runParamsFileCount = await page.locator("#runParamsFile").count();
+const applyRunParamsButtonCount = await page.locator("#applyRunParams").count();
+const uploadRunParamsButtonCount = await page.locator("#uploadRunParams").count();
+const copyRunParamsJsonButtonCount = await page.locator("#copyRunParamsJson").count();
+const copyRunParamsUrlButtonCount = await page.locator("#copyRunParamsUrl").count();
 const fixedSeedDefaultChecked = await page.locator("#fixedSeedEnabled").isChecked();
 const initialReproStatus = await page.locator("#reproStatus").textContent();
 await page.locator("#mutationRate").fill("0.002");
@@ -76,14 +103,48 @@ await page.locator("#resetDefaults").click();
 const resetMutationValue = await page.locator("#mutationRate").inputValue();
 const fixedSeedAfterDefaults = await page.locator("#fixedSeedEnabled").isChecked();
 const seedAfterDefaults = await page.locator("#seed").inputValue();
-await page.locator("#loadObservedRun").click();
-await page.waitForFunction(() =>
-  document.querySelector("#reproStatus")?.textContent?.includes("Loaded observed hit")
+await page.locator("#runParamsInput").fill(
+  JSON.stringify({
+    seed: 1,
+    mutationRate: 0.0001220703125,
+    metricInterval: 64,
+    checkpointInterval: 256,
+    timeBudgetMs: 32
+  })
 );
-const observedFixedChecked = await page.locator("#fixedSeedEnabled").isChecked();
-const observedSeedValue = await page.locator("#seed").inputValue();
-const observedMutationValue = await page.locator("#mutationRate").inputValue();
-const observedReproStatus = await page.locator("#reproStatus").textContent();
+await page.locator("#applyRunParams").click();
+await page.waitForFunction(() =>
+  document.querySelector("#reproStatus")?.textContent?.includes("Loaded run parameters")
+);
+const importedFixedChecked = await page.locator("#fixedSeedEnabled").isChecked();
+const importedSeedValue = await page.locator("#seed").inputValue();
+const importedMutationValue = await page.locator("#mutationRate").inputValue();
+const importedMetricInterval = await page.locator("#metricInterval").inputValue();
+const importedCheckpointInterval = await page.locator("#checkpointInterval").inputValue();
+const importedTimeBudgetMs = await page.locator("#timeBudgetMs").inputValue();
+const importedReproStatus = await page.locator("#reproStatus").textContent();
+const uploadParamsPath = "/tmp/bff-run-params-upload.json";
+fs.writeFileSync(
+  uploadParamsPath,
+  JSON.stringify({
+    seed: 2,
+    mutationRate: 0.0005,
+    metricInterval: 128,
+    checkpointInterval: 512,
+    timeBudgetMs: 16
+  })
+);
+await page.locator("#runParamsFile").setInputFiles(uploadParamsPath);
+await page.waitForFunction(() =>
+  document.querySelector("#reproStatus")?.textContent?.includes("Uploaded")
+);
+const uploadedFixedChecked = await page.locator("#fixedSeedEnabled").isChecked();
+const uploadedSeedValue = await page.locator("#seed").inputValue();
+const uploadedMutationValue = await page.locator("#mutationRate").inputValue();
+const uploadedMetricInterval = await page.locator("#metricInterval").inputValue();
+const uploadedCheckpointInterval = await page.locator("#checkpointInterval").inputValue();
+const uploadedTimeBudgetMs = await page.locator("#timeBudgetMs").inputValue();
+const uploadedReproStatus = await page.locator("#reproStatus").textContent();
 const replicatorPresetOptions = await page.locator("#replicatorPreset option").count();
 const initialReplicatorCode = await page.locator("#replicatorCode").textContent();
 await page.locator("#replicatorCount").fill("3");
@@ -241,6 +302,7 @@ const result = {
   desktopLayout,
   midLayout,
   mobileLayout,
+  urlParamState,
   epoch,
   epochsPerSecond,
   pairsPerEpoch,
@@ -275,15 +337,30 @@ const result = {
   latestEpochLabel,
   resetMutationValue,
   fixedSeedControlCount,
-  loadObservedRunButtonCount,
+  runParamsInputCount,
+  runParamsFileCount,
+  applyRunParamsButtonCount,
+  uploadRunParamsButtonCount,
+  copyRunParamsJsonButtonCount,
+  copyRunParamsUrlButtonCount,
   fixedSeedDefaultChecked,
   initialReproStatus,
   fixedSeedAfterDefaults,
   seedAfterDefaults,
-  observedFixedChecked,
-  observedSeedValue,
-  observedMutationValue,
-  observedReproStatus,
+  importedFixedChecked,
+  importedSeedValue,
+  importedMutationValue,
+  importedMetricInterval,
+  importedCheckpointInterval,
+  importedTimeBudgetMs,
+  importedReproStatus,
+  uploadedFixedChecked,
+  uploadedSeedValue,
+  uploadedMutationValue,
+  uploadedMetricInterval,
+  uploadedCheckpointInterval,
+  uploadedTimeBudgetMs,
+  uploadedReproStatus,
   initiallyCollapsedSections,
   movieCaptureToggleCount,
   manualMovieCaptureButtonCount,
@@ -331,6 +408,13 @@ if (
   errors.length > 0 ||
   desktopLayout.parametersRightOfCanvas ||
   !desktopLayout.docsBelowCanvas ||
+  !urlParamState.fixed ||
+  urlParamState.seed !== "12" ||
+  urlParamState.mutationRate !== "0.003" ||
+  urlParamState.checkpointInterval !== "128" ||
+  urlParamState.metricInterval !== "64" ||
+  urlParamState.timeBudgetMs !== "8" ||
+  !urlParamState.status?.includes("Loaded run parameters from URL") ||
   !desktopLayout.parametersBelowCanvas ||
   !desktopLayout.parametersBelowDocs ||
   !desktopLayout.replicatorBelowParameters ||
@@ -388,15 +472,30 @@ if (
   newRunCount !== 0 ||
   resetMutationValue !== "0.0001220703125" ||
   fixedSeedControlCount !== 1 ||
-  loadObservedRunButtonCount !== 1 ||
+  runParamsInputCount !== 1 ||
+  runParamsFileCount !== 1 ||
+  applyRunParamsButtonCount !== 1 ||
+  uploadRunParamsButtonCount !== 1 ||
+  copyRunParamsJsonButtonCount !== 1 ||
+  copyRunParamsUrlButtonCount !== 1 ||
   fixedSeedDefaultChecked ||
   !initialReproStatus?.includes("fresh random seed") ||
   fixedSeedAfterDefaults ||
   seedAfterDefaults !== "0" ||
-  !observedFixedChecked ||
-  observedSeedValue !== "1" ||
-  observedMutationValue !== "0.0001220703125" ||
-  !observedReproStatus?.includes("epoch 11008") ||
+  !importedFixedChecked ||
+  importedSeedValue !== "1" ||
+  importedMutationValue !== "0.0001220703125" ||
+  importedMetricInterval !== "64" ||
+  importedCheckpointInterval !== "256" ||
+  importedTimeBudgetMs !== "32" ||
+  !importedReproStatus?.includes("Loaded run parameters") ||
+  !uploadedFixedChecked ||
+  uploadedSeedValue !== "2" ||
+  uploadedMutationValue !== "0.0005" ||
+  uploadedMetricInterval !== "128" ||
+  uploadedCheckpointInterval !== "512" ||
+  uploadedTimeBudgetMs !== "16" ||
+  !uploadedReproStatus?.includes("Uploaded") ||
   movieCaptureToggleCount !== 1 ||
   manualMovieCaptureButtonCount !== 1 ||
   movieCaptureDefaultChecked ||

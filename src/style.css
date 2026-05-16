@@ -471,6 +471,30 @@ label {
   padding-top: 10px;
 }
 
+.run-import-field,
+.repro-status {
+  width: 100%;
+  justify-self: stretch;
+}
+
+.run-import-field textarea {
+  min-height: 82px;
+}
+
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.run-param-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .seed-toggle {
   display: flex;
   align-items: center;
@@ -481,10 +505,16 @@ label {
   width: auto;
 }
 
-#loadObservedRun {
+#applyRunParams,
+#uploadRunParams,
+#copyRunParamsJson,
+#copyRunParamsUrl {
   width: auto;
   min-height: 34px;
   justify-self: start;
+}
+
+#applyRunParams {
   color: #0f373d;
   background: var(--accent-soft);
   border-color: #b8d6d2;
