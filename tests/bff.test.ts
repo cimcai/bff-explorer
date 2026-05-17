@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { evaluateTape, type EvalResult } from "../src/simulation/bff";
+import {
+  createEvalScratch,
+  evaluateTape,
+  type EvalResult
+} from "../src/simulation/bff";
 import { PAIR_TAPE_SIZE, TAPE_SIZE } from "../src/simulation/constants";
 import { knownReplicatorBytes } from "../src/simulation/knownReplicator";
 
@@ -99,6 +103,57 @@ describe("BFF interpreter", () => {
       );
       expect(Array.from(optimized)).toEqual(Array.from(reference));
     }
+  });
+
+  it("matches the reference interpreter with reusable loop-jump scratch", () => {
+    const scratch = createEvalScratch();
+    let state = 0x87654321;
+    for (let sample = 0; sample < 500; sample += 1) {
+      const tape = new Uint8Array(PAIR_TAPE_SIZE);
+      for (let i = 0; i < tape.length; i += 1) {
+        state = nextState(state);
+        tape[i] = state & 255;
+      }
+      const optimized = tape.slice();
+      const reference = tape.slice();
+      const maxReads = 1 + (sample % 257);
+
+      expect(evaluateTape(optimized, maxReads, scratch)).toEqual(
+        referenceEvaluateTape(reference, maxReads)
+      );
+      expect(Array.from(optimized)).toEqual(Array.from(reference));
+    }
+  });
+
+  it("invalidates cached jumps when execution rewrites bracket bytes", () => {
+    const tape = new Uint8Array(PAIR_TAPE_SIZE);
+    tape[0] = code("[");
+    tape[1] = code(">");
+    tape[2] = code("+");
+    tape[3] = code("]");
+    tape[4] = code("]");
+    const optimized = tape.slice();
+    const reference = tape.slice();
+
+    expect(evaluateTape(optimized, 32, createEvalScratch())).toEqual(
+      referenceEvaluateTape(reference, 32)
+    );
+    expect(Array.from(optimized)).toEqual(Array.from(reference));
+  });
+
+  it("fast-forwards inert loop bodies without changing semantics", () => {
+    const tape = new Uint8Array(PAIR_TAPE_SIZE);
+    tape[0] = code("[");
+    tape[1] = 200;
+    tape[2] = 201;
+    tape[3] = code("]");
+    const optimized = tape.slice();
+    const reference = tape.slice();
+
+    expect(evaluateTape(optimized, 257, createEvalScratch())).toEqual(
+      referenceEvaluateTape(reference, 257)
+    );
+    expect(Array.from(optimized)).toEqual(Array.from(reference));
   });
 
   it("runs the paper example replicator as a positive semantic control", () => {

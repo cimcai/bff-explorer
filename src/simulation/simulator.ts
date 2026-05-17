@@ -18,7 +18,7 @@ import {
   TAPE_SIZE,
   TILE_SIZE
 } from "./constants";
-import { evaluateTape } from "./bff";
+import { createEvalScratch, evaluateTape } from "./bff";
 import {
   buildRadius2NeighborTable,
   initializeOrder,
@@ -144,6 +144,7 @@ export class BffSimulator {
   private pairsA: Uint32Array;
   private pairsB: Uint32Array;
   private pairTape = new Uint8Array(PAIR_TAPE_SIZE);
+  private evalScratch = createEvalScratch();
   private checkpoints: Checkpoint[] = [];
   private nextCheckpointId = 1;
   private isViewingCheckpoint = false;
@@ -283,7 +284,8 @@ export class BffSimulator {
       );
       const result = evaluateTape(
         this.pairTape,
-        this.config.maxInstructionReads
+        this.config.maxInstructionReads,
+        this.evalScratch
       );
       instructionReads += result.instructionReads;
       activeOps += result.activeOps;
